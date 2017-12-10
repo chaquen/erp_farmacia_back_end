@@ -1,0 +1,16 @@
+--cambios se agregar id a input en formulario promocion
+-> txtCodPromo
+--se agregar datalist en formulario promocion
+-> lista_prod_promo
+
+--se agrega id a tabla de creditos
+->tblCreditos
+--se agregar id en estado cliente cuenta
+->h3NombreClienteEstadoCuenta
+->h2SaldoActualCliente
+->h2limiteSaldoCliente
+->h4Liquidar
+->h4DetalleAbono
+--se agregar id a etiqueta title
+->titulo
+--ERROR POR TIEMPO DE EJECUCION EN SERVIDOR
