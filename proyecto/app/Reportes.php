@@ -22,7 +22,11 @@ class Reportes {
                                 ->where([
                                            ["productos.codigo_producto","LIKE",$datos->datos->nombre_producto]
                                         ])
+                                ->orwhere([
+                                           ["productos.codigo_distribuidor","LIKE",$datos->datos->nombre_producto]
+                                        ])
                         ->groupby('productos.id')
+                        ->orderby('total_existencias_unidades',"DESC")        
                         ->select('productos.id',
                                  'proveedors.nombre_proveedor',
                             'productos.nombre_producto',
@@ -54,6 +58,7 @@ class Reportes {
                         ->join('sedes','sedes.id','=','detalle_inventarios.fk_id_sede')
                         ->join('proveedors','proveedors.id','=','productos.fk_id_proveedor')        
                         ->groupby('productos.id')
+                        ->orderby('total_existencias_unidades',"DESC")    
                         ->select('productos.id',
                               'proveedors.nombre_proveedor',   
                             'productos.nombre_producto',
@@ -88,6 +93,7 @@ class Reportes {
                         ->join('sedes','sedes.id','=','detalle_inventarios.fk_id_sede')
                             ->join('proveedors','proveedors.id','=','productos.fk_id_proveedor')        
                         ->groupby('productos.id')
+                        ->orderby('total_existencias_unidades',"DESC")    
                         ->where([["productos.fk_id_departamento",'=',$datos->datos->fk_id_categoria],["productos.fk_id_proveedor",'=',$datos->datos->fk_id_proveedor]])
                         ->select('productos.id',
                              'proveedors.nombre_proveedor',
@@ -117,6 +123,7 @@ class Reportes {
                         ->join('sedes','sedes.id','=','detalle_inventarios.fk_id_sede')
                             ->join('proveedors','proveedors.id','=','productos.fk_id_proveedor')        
                         ->groupby('productos.id')
+                        ->orderby('total_existencias_unidades',"DESC")    
                         ->where("productos.fk_id_departamento",'=',$datos->datos->fk_id_categoria)
                         ->select('productos.id',
                              'proveedors.nombre_proveedor',
@@ -164,31 +171,37 @@ class Reportes {
     		case "SEDE":
                 
                     $arr_where=array();
+                    $arr_where_2=array();
                     $i=0;
                   //  var_dump($datos->datos->fk_id_categoria);
                     //$arr_where[$i]=["detalle_inventarios.estado_producto_sede",'=',"1"];
                     $i++;
                     if((int)$datos->datos->fk_id_categoria!==0){
                         $arr_where[$i]=["productos.fk_id_departamento",'=',$datos->datos->fk_id_categoria];
+                         $arr_where_2[$i]=["productos.fk_id_departamento",'=',$datos->datos->fk_id_categoria];
                                 $i++;
                     }
                     
                     if($datos->datos->nombre_producto!=""){
-                         $arr_where[$i]=["productos.codigo_producto","=",$datos->datos->nombre_producto];
-                                $i++;
+                         $arr_where[$i]=["productos.codigo_producto","LIKE",$datos->datos->nombre_producto];
+                         $arr_where_2[$i]=["productos.codigo_distribuidor","LIKE",$datos->datos->nombre_producto];       
+                         $i++;
+                         
                     }
                     
                      if($datos->datos->sede!=0){
                           $arr_where[$i]=["sedes.id",'=',$datos->datos->sede];
+                          $arr_where_2[$i]=["sedes.id",'=',$datos->datos->sede];
                                 $i++;
                      }
                      //var_dump($datos->datos->fk_id_proveedor);
                        if((int)$datos->datos->fk_id_proveedor!==0){
                           $arr_where[$i]=["proveedors.id",'=',$datos->datos->fk_id_proveedor];
+                          $arr_where_2[$i]=["proveedors.id",'=',$datos->datos->fk_id_proveedor];
                                
                      }
                      //echo count($arr_where);
-                  
+                    
                     if(count($arr_where)>0){
                           
                             $reporte=DB::table('productos')
@@ -196,6 +209,8 @@ class Reportes {
                             ->join('sedes','sedes.id','=','detalle_inventarios.fk_id_sede')
                             ->join('proveedors',"proveedors.id","=",'productos.fk_id_proveedor')         
                             ->where($arr_where)
+                            ->orwhere($arr_where_2)
+                            ->orderby('total_existencias_unidades',"DESC")            
                             ->select('productos.id',
                                     'proveedors.nombre_proveedor',
                                     'productos.nombre_producto',
@@ -259,28 +274,32 @@ class Reportes {
     public function reporte_bajo_inventario($datos) {
         switch($datos->datos->tipo){
     		case "GENERAL":
-    			$reporte=DB::table('productos')
+    		   $reporte=DB::table('productos')
     				->join('detalle_inventarios','detalle_inventarios.fk_id_producto','=','productos.id')
     				->join('sedes','sedes.id','=','detalle_inventarios.fk_id_sede')
-                    ->join('proveedors','proveedors.id','=','productos.fk_id_proveedor')   
-                    ->join('departamentos','departamentos.id','=','productos.fk_id_departamento')
-                    ->where('detalle_inventarios.estado_inventario','=',"agotado")
-                    ->select('productos.id',
-                        'productos.nombre_producto',
-                        'productos.codigo_producto',
-                        'productos.codigo_distribuidor',
-                        'precio_compra',
-                        'productos.precio_venta',
-                        'productos.precio_mayoreo',
-                        'productos.tipo_presentacion',   
-                        'sedes.nombre_sede',
-                        'sedes.codigo_sede',
-                        'productos.minimo_inventario',
-                        'detalle_inventarios.cantidad_existencias',
-                         'detalle_inventarios.cantidad_existencias_unidades',
-                        'departamentos.nombre_departamento',
-                         'proveedors.nombre_proveedor'   )
-                    ->get();
+                        ->join('proveedors','proveedors.id','=','productos.fk_id_proveedor')   
+                        ->join('departamentos','departamentos.id','=','productos.fk_id_departamento')
+                        ->where('detalle_inventarios.estado_inventario','=',"agotado")
+                        ->orwhere([
+                                    ["detalle_inventarios.cantidad_existencias_unidades",'<=','detalle_inventarios.minimo_inventario_sede'],
+                                    ['detalle_inventarios.estado_inventario','<>',"inactivo"]
+                                   ])
+                        ->select('productos.id',
+                            'productos.nombre_producto',
+                            'productos.codigo_producto',
+                            'productos.codigo_distribuidor',
+                            'precio_compra',
+                            'productos.precio_venta',
+                            'productos.precio_mayoreo',
+                            'productos.tipo_presentacion',   
+                            'sedes.nombre_sede',
+                            'sedes.codigo_sede',
+                            'productos.minimo_inventario',
+                            'detalle_inventarios.cantidad_existencias',
+                             'detalle_inventarios.cantidad_existencias_unidades',
+                            'departamentos.nombre_departamento',
+                             'proveedors.nombre_proveedor'   )
+                        ->get();
                         $arr_repo=[];
                         $i=0;
                         foreach ($reporte as $key => $value) {
@@ -293,16 +312,22 @@ class Reportes {
     			break;
     		case "SEDE":
     			$reporte=DB::table('productos')
-                        ->join('proveedors','proveedors.id','=','productos.fk_id_proveedor')   
-        				->join('detalle_inventarios','detalle_inventarios.fk_id_producto','=','productos.id')
-        				->join('sedes','sedes.id','=','detalle_inventarios.fk_id_sede')
-                        ->join('departamentos','departamentos.id','=','productos.fk_id_departamento')
-        				->where([
+                                    ->join('proveedors','proveedors.id','=','productos.fk_id_proveedor')   
+                                    ->join('detalle_inventarios','detalle_inventarios.fk_id_producto','=','productos.id')
+                                    ->join('sedes','sedes.id','=','detalle_inventarios.fk_id_sede')
+                                    ->join('departamentos','departamentos.id','=','productos.fk_id_departamento')
+        			    ->where([
         						
-        						["sedes.id",'=',$datos->datos->sedes],
-                                ["detalle_inventarios.estado_inventario","=","agotado"]	
+                                                ["sedes.id",'=',$datos->datos->sedes],
+                                                ["detalle_inventarios.estado_inventario","=","agotado"]	
 
-        					])
+        				    ])
+                                    ->orwhere([
+        						
+                                                ["sedes.id",'=',$datos->datos->sedes],
+                                                ["detalle_inventarios.cantidad_existencias_unidades",'<=','detalle_inventarios.minimo_inventario_sede'],
+                                                ['detalle_inventarios.estado_inventario','<>',"inactivo"]	
+                                              ])        
                         ->select('detalle_inventarios.id',
                             'productos.codigo_producto',
                             'productos.codigo_distribuidor',

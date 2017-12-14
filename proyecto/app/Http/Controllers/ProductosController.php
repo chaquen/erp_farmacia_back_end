@@ -462,9 +462,51 @@ class ProductosController extends Controller
                      $campo2=$campo;
                      switch ($campo){
                          case "precio_compra":
-                             $campo2.="_sede";
+                             
                              $valor=(double)$datos->datos->valor;
-                               $actualizar=true;
+                               $actualizar=false;
+                               $pp=DB::table("productos")
+                                       ->where("id","=",$id_producto)
+                                       ->get();
+                               $pp_dt=DB::table("detalle_inventarios")
+                                       ->where("fk_id_producto","=",$id_producto)
+                                       ->get();
+                             //actualizo productos
+                             $dif=$pp[0]->precio_venta-(double)$valor;
+                             $diff_blister=$pp[0]->precio_venta_blister-(double)$valor;
+                             $diff_unidad=$pp[0]->precio_mayoreo-(double)$valor;
+                             
+                             $porcentaje=(double)round((($dif)*100)/$pp[0]->precio_venta,2);
+                             $porcentaje_bli=(double)round((($diff_blister)*100)/$pp[0]->precio_venta_blister,2);
+                             $porcentaje_uni=(double)round((($diff_unidad)*100)/$pp[0]->precio_mayoreo,2);
+                             
+                               
+                               DB::table("productos")
+                                       ->where("id","=",$id_producto)
+                                       ->update(["precio_compra_blister"=>$valor/$pp[0]->unidades_por_caja,
+                                           "precio_compra_unidad"=>($valor/$pp[0]->unidades_por_caja)/$pp[0]->unidades_por_blister,
+                                           "porcentaje_ganancia"=>$porcentaje,
+                                           "porcentaje_ganancia_blister"=>$porcentaje_bli,
+                                           "porcentaje_ganancia_unidad"=>$porcentaje_uni]);
+                             
+                             //actualiza detall inventario
+                               
+                             $dif_dt=$pp_dt[0]->precio_venta_sede-(double)$valor;
+                             $diff_blister_dt=$pp_dt[0]->precio_venta_blister_sede-(double)$valor;
+                             $diff_unidad_dt=$pp_dt[0]->precio_mayoreo_sede-(double)$valor;
+                             
+                             $porcentaje_dt=(double)round((($dif_dt)*100)/$pp_dt[0]->precio_venta_sede,2);
+                             $porcentaje_bli_dt=(double)round((($diff_blister_dt)*100)/$pp_dt[0]->precio_venta_blister_sede,2);
+                             $porcentaje_uni_dt=(double)round((($diff_unidad_dt)*100)/$pp_dt[0]->precio_mayoreo_sede,2);
+                          
+                            
+                                 DB::table("detalle_inventarios")
+                                       ->where("fk_id_producto","=",$id_producto)
+                                       ->update([
+                                           "porcentaje_ganancia_sede"=>$porcentaje_dt,
+                                           "porcentaje_ganancia_blister_sede"=>$porcentaje_bli_dt,
+                                           "porcentaje_ganancia_sede_unidad"=>$porcentaje_uni_dt]);
+                               
                              break;
                          case "precio_venta":
                              $campo2.="_sede";
@@ -839,19 +881,24 @@ class ProductosController extends Controller
                             ->get();
                         echo floor((int)$valor/(int)$d[0]->unidades_por_blister)."--\n";
                         echo floor(((int)$valor/(int)$d[0]->unidades_por_blister)/(int)$d[0]->unidades_por_caja);
+                        if($valor>0){
+                            $es="activo";
+                        }else{
+                            $es="agotado";
+                        }
                         DB::table($nom_tabla)
                             ->where("id","=",$id_producto)
                              ->update([ 
                                         "cantidad_existencias_blister"=>floor((int)$valor/(int)$d[0]->unidades_por_blister),
-                                        "cantidad_existencias"=>floor(((int)$valor/(int)$d[0]->unidades_por_blister)/(int)$d[0]->unidades_por_caja)]);
+                                        "cantidad_existencias"=>floor(((int)$valor/(int)$d[0]->unidades_por_blister)/(int)$d[0]->unidades_por_caja),
+                                        "estado_inventario"=>$es]);
                         break;
                     case "minimo_inventario":
                         $campo.="_sede";
                        
                         
                         break;
-                    case "":
-                        break;
+                   
                 }
                  DB::table($nom_tabla)
                     ->where("id","=",$id_producto)
@@ -869,13 +916,35 @@ class ProductosController extends Controller
         
     }
     public function crear_productos_inventario(Request $request){
-      $prod=new Producto();
+        
+        $prod=new Producto();
         $dt=new DetalleInventario();
         $mi=new MovimientosInventario();
         $datos=json_decode($request->get('datos'));
         //consulto que no exista producto
-        $pro=$prod->consultar_por_campo(array(array("codigo_producto",'=',$datos->datos->codigo_producto)),"AND",array());
-
+            $pro=$prod->consultar_por_campo(array(array("codigo_producto",'=',$datos->datos->codigo_producto)),"AND",array());
+            
+        
+        if($pro["respuesta"]==false){
+            //insero si no existe
+            if($datos->datos->precio_compra==0){
+                $datos->datos->precio_compra=1;
+            }
+            if($datos->datos->precio_compra_blister==0){
+                $datos->datos->precio_compra_blister=1;
+            }
+            if($datos->datos->precio_compra_unidad==0){
+                $datos->datos->precio_compra_unidad=1;
+            }
+            if($datos->datos->precio_venta==0){
+                $datos->datos->precio_venta=1;
+            }
+            if($datos->datos->precio_venta_blister==0){
+                $datos->datos->precio_venta_blister=1;
+            }
+            if($datos->datos->precio_mayoreo==0){
+                $datos->datos->precio_mayoreo=1;
+            }
             $dif=$datos->datos->precio_venta-(double)$datos->datos->precio_compra;
             $porcentaje_ganancia=(double)round((($dif)*100)/$datos->datos->precio_venta,2);
 
@@ -883,11 +952,7 @@ class ProductosController extends Controller
             $porcentaje_ganancia_blister=(double)round((($dif)*100)/$datos->datos->precio_venta_blister,2);
 
             $dif=$datos->datos->precio_mayoreo-(double)$datos->datos->precio_compra_unidad;
-            $porcentaje_ganancia_unidad=(double)round((($dif)*100)/$datos->datos->precio_compra_unidad,2);
-        
-        if($pro["respuesta"]==false){
-            //insero si no existe
-            
+            $porcentaje_ganancia_unidad=(double)round((($dif)*100)/$datos->datos->precio_mayoreo,2);
             
 
             $arr=$prod->insertar(array(
@@ -1040,63 +1105,16 @@ class ProductosController extends Controller
 
 
             }  
-        }else{
-            return response()->json(["mensaje"=>"producto NO registrado","respuesta"=>false]);            
+        }
+        else{
+            return response()->json(["mensaje"=>"producto NO registrado este codigo ya exite","respuesta"=>false]);            
         }
         
 
 
         
     }
-    /*public function actualizar_unidades_reservadas(Request $request){
-         $datos=json_decode($request->get("datos"));
-            $campo="";
-            $valor="";
-
-            switch ($datos->datos->tipo_venta_tienda) {
-                case "unidad":
-                        $campo="unidades_reservadas";
-                        $valor=$datos->datos->cantidad_para_venta;
-                    break;
-                case "caja":
-                        $campo="unidades_reservadas_caja";
-                        $valor=$datos->datos->cantidad_para_venta;
-                    break;
-                case "blister":
-                        $campo="unidades_reservadas_blister";
-                        $valor=$datos->datos->cantidad_para_venta;
-                    break;    
-                default:
-                    # code...
-                    break;
-            }
-            $dt0=DB::table("detalle_inventarios")
-                ->where("id","=",$datos->datos->id)
-                ->get();
-
-            DB::table("detalle_inventarios")
-                ->where("id","=",$datos->datos->id)
-                ->update([$campo=>$valor]);
-
-            $dt=DB::table("detalle_inventarios")
-                ->where("id","=",$datos->datos->id)
-                ->get();
-
-            if(count($dt)>0){
-                if($dt[0]->cantidad_existencias_unidades <= $dt[0]->unidades_reservadas){
-                    DB::table("detalle_inventarios")
-                        ->where("id","=",$datos->datos->id)
-                        ->update(["estado_inventario"=>"agotado"]);                    
-                }else{
-                     DB::table("detalle_inventarios")
-                        ->where("id","=",$datos->datos->id)
-                        ->update(["estado_inventario"=>"activo"]);         
-                }
-            }
-
-             return response()->json(["respuesta"=>true,"mensaje"=>"Producto actualizado"]);
-    }*/
-
+  
   
 }
 

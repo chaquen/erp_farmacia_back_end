@@ -237,35 +237,35 @@ class FacturaController extends Controller
                 ->where("id","=",$value->id_fac)
                 ->delete();
 
-            if($value->tipo_venta=="unidad"){
-                  DB::table("detalle_inventarios")
-                    ->where("detalle_inventarios.id","=",$value->id)
-                    ->increment("cantidad_existencias_unidades",$value->cantidad_producto);   
-            }else if($value->tipo_venta=="blister"){
-                DB::table("detalle_inventarios")
-                    ->where("detalle_inventarios.id","=",$value->id)
-                    ->increment("cantidad_existencias_unidades",$value->cantidad_producto*$value->unidades_por_blister); 
-            }else if($value->tipo_venta=="caja"){
-                DB::table("detalle_inventarios")
-                    ->where("detalle_inventarios.id","=",$value->id)
-                    ->increment("cantidad_existencias_unidades",($value->cantidad_producto*$value->unidades_por_blister)*$value->unidades_por_caja); 
-            }
-
-            $quedan=DB::table("detalle_inventarios")
-                        ->join("productos","productos.id","=","detalle_inventarios.fk_id_producto")
-                         ->where("detalle_inventarios.id","=",$id)    
-                         ->select("detalle_inventarios.id",
-                          "productos.unidades_por_caja",
-                          "productos.unidades_por_blister",
-                          "detalle_inventarios.cantidad_existencias_unidades",
-                          "detalle_inventarios.cantidad_existencias",
-                          "detalle_inventarios.cantidad_existencias_blister"  )   
-                         ->get();
-
-             DB::table("detalle_inventarios")
-                    ->where( "id","=",$value->id)
-                    ->update(["cantidad_existencias_blister"=>floor($quedan[0]->cantidad_existencias_unidades/$quedan[0]->unidades_por_blister),
-                             "cantidad_existencias"=>floor(($quedan[0]->cantidad_existencias_unidades/$quedan[0]->unidades_por_blister)/$quedan[0]->unidades_por_caja)]);
+//            if($value->tipo_venta=="unidad"){
+//                  DB::table("detalle_inventarios")
+//                    ->where("detalle_inventarios.id","=",$value->id)
+//                    ->increment("cantidad_existencias_unidades",$value->cantidad_producto);   
+//            }else if($value->tipo_venta=="blister"){
+//                DB::table("detalle_inventarios")
+//                    ->where("detalle_inventarios.id","=",$value->id)
+//                    ->increment("cantidad_existencias_unidades",$value->cantidad_producto*$value->unidades_por_blister); 
+//            }else if($value->tipo_venta=="caja"){
+//                DB::table("detalle_inventarios")
+//                    ->where("detalle_inventarios.id","=",$value->id)
+//                    ->increment("cantidad_existencias_unidades",($value->cantidad_producto*$value->unidades_por_blister)*$value->unidades_por_caja); 
+//            }
+//
+//            $quedan=DB::table("detalle_inventarios")
+//                        ->join("productos","productos.id","=","detalle_inventarios.fk_id_producto")
+//                         ->where("detalle_inventarios.id","=",$id)    
+//                         ->select("detalle_inventarios.id",
+//                          "productos.unidades_por_caja",
+//                          "productos.unidades_por_blister",
+//                          "detalle_inventarios.cantidad_existencias_unidades",
+//                          "detalle_inventarios.cantidad_existencias",
+//                          "detalle_inventarios.cantidad_existencias_blister"  )   
+//                         ->get();
+//
+//             DB::table("detalle_inventarios")
+//                    ->where( "id","=",$value->id)
+//                    ->update(["cantidad_existencias_blister"=>floor($quedan[0]->cantidad_existencias_unidades/$quedan[0]->unidades_por_blister),
+//                             "cantidad_existencias"=>floor(($quedan[0]->cantidad_existencias_unidades/$quedan[0]->unidades_por_blister)/$quedan[0]->unidades_por_caja)]);
 
                
             
@@ -278,16 +278,16 @@ class FacturaController extends Controller
               
             if(count($c)>1){
               $fac=new Factura();
-              $R=$fac->eliminar([["id","=",$id]]);
+             // $R=$fac->eliminar([["id","=",$id]]);
               
-              if($R["respuesta"]==true){
+              
                 $dat=DB::table("facturas")
-                ->where([
-                        ["fk_id_sede","=",$c[0]->fk_id_sede],
-                        ["estado_factura","=","pendiente"],
-                        ["fk_id_vendedor","=",$c[0]->fk_id_vendedor]
-                    ])
-                ->get();
+                    ->where([
+                            ["fk_id_sede","=",$c[0]->fk_id_sede],
+                            ["estado_factura","=","pendiente"],
+                            ["fk_id_vendedor","=",$c[0]->fk_id_vendedor]
+                        ])
+                    ->get();
                 $arr=array();
                 $i=0;
                 foreach ($dat as $key => $value) {
@@ -326,11 +326,57 @@ class FacturaController extends Controller
                         ->get();
                      $i++;   
                 }
-              }
+              
 
               return response()->json(["mensaje"=>"ticket eliminado","respuesta"=>true,"datos"=>$arr]);  
-            }else{
-              return response()->json(["mensaje"=>"ticket eliminado","respuesta"=>true]);
+            }
+            else{
+                 $dat=DB::table("facturas")
+                    ->where([
+                            ["fk_id_sede","=",$c[0]->fk_id_sede],
+                            ["estado_factura","=","pendiente"],
+                            ["fk_id_vendedor","=",$c[0]->fk_id_vendedor]
+                        ])
+                    ->get();
+                  $arr=array();
+                $i=0;
+                  foreach ($dat as $key => $value) {
+                    $arr[$i]=(array)$value;
+                    $arr[$i]["productos"]=DB::table("detalle_facturas")
+
+                       ->join("detalle_inventarios","detalle_inventarios.id","=","detalle_facturas.fk_id_producto")
+                      
+                       ->join("productos","productos.id","=","detalle_inventarios.fk_id_producto")
+                       
+                        ->where("fk_id_factura","=",$value->id)
+                        ->select(
+                                                    "detalle_facturas.id as id_factura",
+                                                    "detalle_facturas.cantidad_producto",
+                                                    "detalle_facturas.tipo_venta",
+                                                    "detalle_facturas.descuento",
+                                                    "detalle_facturas.valor_item",
+                                                    "detalle_inventarios.cantidad_existencias",
+                                                    "detalle_inventarios.cantidad_existencias_blister",
+                                                    "detalle_inventarios.cantidad_existencias_unidades",
+                                                    "detalle_inventarios.precio_venta_sede",
+                                                    "detalle_inventarios.precio_venta_blister_sede",
+                                                    "detalle_inventarios.precio_mayoreo_sede",
+                                                    "detalle_inventarios.minimo_inventario_sede",
+                                                    "detalle_inventarios.estado_inventario",
+                                                    "detalle_inventarios.unidades_reservadas",
+                                                    "detalle_inventarios.id as id_producto_inventario",
+                                                    "productos.codigo_producto",
+                                                    "productos.nombre_producto",
+                                                    "productos.tipo_venta_producto",
+                                                    "productos.id",
+                                                    "productos.unidades_por_blister",
+                                                    "productos.unidades_por_caja"
+
+                                                )
+                        ->get();
+                     $i++;   
+                }
+              return response()->json(["mensaje"=>"ticket eliminado","respuesta"=>true,"datos"=>$arr]);  
             }  
             
        
@@ -432,7 +478,9 @@ class FacturaController extends Controller
                                                     "productos.tipo_venta_producto",
                                                     "productos.id",
                                                     "productos.unidades_por_blister",
-                                                    "productos.unidades_por_caja"
+                                                    "productos.unidades_por_caja",
+                                                    "productos.inventario"      
+                                                          
 
 
 
@@ -485,38 +533,80 @@ class FacturaController extends Controller
               //si tipo de venta es unidad descontar unidades
               //si tipo de venat es blister descontar unidades * numero de unidades por blister
               //si tipo de venta es caja descontar unidades * numero de caja  
-               switch ($value->tipo_venta) {
-                  case 'unidad':
-                   # code...
-                          DB::table("detalle_inventarios")
-                          ->where("id","=",$value->id_producto_inventario)
-                          ->decrement("cantidad_existencias_unidades",(int)$value->cantidad_producto);
+              //var_dump($value);
+             if($value->inventario==1){ 
+                switch ($value->tipo_venta) {
+                   case 'unidad':
                     # code...
-                    break;
-                  case 'blister':
-                          DB::table("detalle_inventarios")
-                          ->where("id","=",$value->id_producto_inventario)
-                          ->decrement("cantidad_existencias_unidades",(int)$value->cantidad_producto*(int)$value->unidades_por_blister);
-                    # code...
-                    break;
-                  case 'caja':
-                        DB::table("detalle_inventarios")
-                          ->where("id","=",$value->id_producto_inventario)
-                          ->decrement("cantidad_existencias_unidades",floor((int)$value->cantidad_producto*(int)$value->unidades_por_blister)*(int)$value->unidades_por_caja);
-                      
-                    break;
-                  
-                } 
-             
+                           DB::table("detalle_inventarios")
+                           ->where("id","=",$value->id_producto_inventario)
+                           ->decrement("cantidad_existencias_unidades",(int)$value->cantidad_producto);
+                     # code...
+                     break;
+                   case 'blister':
+                           DB::table("detalle_inventarios")
+                           ->where("id","=",$value->id_producto_inventario)
+                           ->decrement("cantidad_existencias_unidades",(int)$value->cantidad_producto*(int)$value->unidades_por_blister);
+                     # code...
+                     break;
+                   case 'caja':
+                         DB::table("detalle_inventarios")
+                           ->where("id","=",$value->id_producto_inventario)
+                           ->decrement("cantidad_existencias_unidades",floor((int)$value->cantidad_producto*(int)$value->unidades_por_blister)*(int)$value->unidades_por_caja);
 
-              $quedan=DB::table("detalle_inventarios")
-                      ->where("id","=",$value->id_producto_inventario)
-                      ->get();    
+                     break;
+
+                 } 
+                $pp=DB::table("detalle_inventarios")
+                        ->join("productos","productos.id","=","detalle_inventarios.fk_id_producto")
+                     ->where([["detalle_inventarios.id","=",$value->id_producto_inventario],["detalle_inventarios.minimo_inventario_sede","<=","detalle_inventarios.cantidad_existencias_unidades"]])
+                        ->orwhere([["detalle_inventarios.id","=",$value->id_producto_inventario],["detalle_inventarios.cantidad_existencias_unidades","=",0]])
+                        
+                     ->get();   
+                //var_dump($pp);
+                
+                 if(count($pp)>0){
+                     
+                      if($pp[0]->cantidad_existencias_unidades==0){
+                          $men="ALERTA PRODUCTO ".$value->nombre_producto." AGOTADO";
+                           DB::table("detalle_inventarios")
+                            ->where("id","=",$value->id_producto_inventario)
+                            ->update(["estado_inventario"=>"agotado"]);
+                      }else{
+                          $men="ALERTA PRODUCTO ".$value->nombre_producto." BAJO EN INVENTARIO";
+                      }
+                      $noti=DB::table("notificaciones")
+                          ->where([["fk_id_sede","=",$datos->datos->fk_id_sede],["trabajo","=","BajoInventario"]])
+                              ->get();
+                      $sede=DB::table("sedes")
+                          ->where("id","=",$datos->datos->fk_id_sede)
+                              ->get();
+                      $destinos= explode(",", $noti[0]->correos);
+                      
+                      foreach ($destinos as $key => $destino) {
+                        Mail::send("email.producto_bajo",["datos"=>$pp[0],"sede"=>$sede[0]],function($msn) use($destino,$men){
+                                $msn->from('erp@asopharma.com',"ERP ASOPHARMA");
+                                $msn->to($destino);
+                                
+                                
+                                $msn->subject($men);
+                        });  
+                      }
+                        
+                      
+                 }
+
+               $quedan=DB::table("detalle_inventarios")
+                       ->where("id","=",$value->id_producto_inventario)
+                       ->get();    
+
+                   DB::table("detalle_inventarios")
+                 ->where("id","=",$value->id_producto_inventario)
+                 ->update(["cantidad_existencias_blister"=>floor((int)$quedan[0]->cantidad_existencias_unidades*(int)$value->unidades_por_blister),
+                           "cantidad_existencias"=>floor(((int)$quedan[0]->cantidad_existencias_unidades*(int)$value->unidades_por_blister)*$value->unidades_por_caja)]);    
+                  
+              }
               
-              DB::table("detalle_inventarios")
-                ->where("id","=",$value->id_producto_inventario)
-                ->update(["cantidad_existencias_blister"=>floor((int)$quedan[0]->cantidad_existencias_unidades*(int)$value->unidades_por_blister),
-                          "cantidad_existencias"=>floor(((int)$quedan[0]->cantidad_existencias_unidades*(int)$value->unidades_por_blister)*$value->unidades_por_caja)]);    
           }
           
 

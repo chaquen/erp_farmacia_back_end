@@ -14,7 +14,7 @@ class CreateDetalleCreditoAbonosTable extends Migration
     {
         Schema::create('detalle_credito_abonos', function (Blueprint $table) {
             $table->increments('id');
-            $table->integer('fk_id_credito');
+            $table->integer('fk_id_credito')->unsigned();
             $table->foreign('fk_id_credito')->references('id')->on('creditos');
             $table->string('observacion');
             $table->decimal('abono',10,2);

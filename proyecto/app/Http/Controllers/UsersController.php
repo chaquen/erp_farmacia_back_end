@@ -265,7 +265,7 @@ class UsersController extends Controller
                  )
                 
             ->get();
-   
+    
          if(count($r)>0){
              
              if($r[0]->tipo=="cajero"){

@@ -342,7 +342,7 @@ class Producto extends Model
                                 "productos.codigo_producto",    
                                 "productos.nombre_producto",
                                 "productos.nombre_producto_venta",
-                                
+                                "productos.inventario",
                                 "detalle_inventarios.precio_mayoreo_sede",
                                 "detalle_inventarios.precio_venta_blister_sede",
                                 "detalle_inventarios.precio_venta_sede",

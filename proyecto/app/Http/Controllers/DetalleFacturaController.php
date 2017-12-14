@@ -58,7 +58,9 @@ class DetalleFacturaController extends Controller
 
 
          $hay=DB::table("detalle_inventarios")
-            ->where("id","=",$datos->datos->producto->id_producto_inventario)
+            ->join("productos","productos.id","=","detalle_inventarios.fk_id_producto")     
+            ->where("detalle_inventarios.id","=",$datos->datos->producto->id_producto_inventario)
+            ->select("detalle_inventarios.cantidad_existencias_unidades","productos.inventario")     
             ->get();  
          //var_dump($datos->datos->producto);    
         if(count($sel)>0){
@@ -70,7 +72,7 @@ class DetalleFacturaController extends Controller
                 $solictadas+=(int)$value->cantidad_producto;    
             }
             //var_dump($solictadas);
-            if($hay[0]->cantidad_existencias_unidades >= ((int)$solictadas+(int)$datos->datos->producto->cantidad_producto)){
+            if($hay[0]->inventario == 1 && $hay[0]->cantidad_existencias_unidades >= ((int)$solictadas+(int)$datos->datos->producto->cantidad_producto)){
                 $id=DB::table("detalle_facturas")
                     ->insertGetId(array(
                                 "fk_id_factura"=>$datos->datos->id_ticket,
@@ -86,12 +88,30 @@ class DetalleFacturaController extends Controller
                             ));    
                      return response()->json(["mensaje"=>"detalle registrado","respuesta"=>true,"id"=>$id]);    
             }else{
-
-                DB::table("detalle_inventarios")
+                if($hay[0]->inventario==1){
+                    /*DB::table("detalle_inventarios")
                     ->where("id","=",$datos->datos->producto->id_producto_inventario)
-                    ->update(["estado_inventario"=>"agotado"]);
+                    ->update(["estado_inventario"=>"agotado"]);*/
+                    return response()->json(["mensaje"=>"No hay unidades suficientes para esta venta","respuesta"=>false]);    
+                }else{
+                    $id=DB::table("detalle_facturas")
+                    ->insertGetId(array(
+                                "fk_id_factura"=>$datos->datos->id_ticket,
+                                "fk_id_producto"=>$datos->datos->producto->id_producto_inventario,
+                                "cantidad_producto"=>$datos->datos->producto->cantidad_producto,
+                                "descuento"=>0,
+                                "tipo_venta"=>$datos->datos->producto->tipo_venta,
+                                "valor_item"=>$datos->datos->producto->valor_item,
+                                "created_at"=>$datos->hora_cliente,
+                                "updated_at"=>$datos->hora_cliente, 
 
-                return response()->json(["mensaje"=>"No hay unidades suficientes para esta venta","respuesta"=>false]);    
+
+                            ));    
+                    return response()->json(["mensaje"=>"detalle registrado","respuesta"=>true,"id"=>$id]);    
+                }
+                
+
+                
             }
             
 
@@ -232,9 +252,9 @@ class DetalleFacturaController extends Controller
                         ));  
 
             }else{
-                DB::table("detalle_inventarios")
+                /*DB::table("detalle_inventarios")
                     ->where("id","=",$datos->datos->producto->id_producto_inventario)
-                    ->update(["estado_inventario"=>"agotado"]);
+                    ->update(["estado_inventario"=>"agotado"]);*/
 
                 return response()->json(["mensaje"=>"No hay unidades suficientes para la venta","respuesta"=>false]);    
             }
