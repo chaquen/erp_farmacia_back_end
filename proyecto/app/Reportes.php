@@ -20,10 +20,10 @@ class Reportes {
                         ->join('sedes','sedes.id','=','detalle_inventarios.fk_id_sede')
                         ->join('proveedors','proveedors.id','=','productos.fk_id_proveedor')        
                                 ->where([
-                                           ["productos.codigo_producto","LIKE",$datos->datos->nombre_producto]
+                                           ["productos.codigo_producto","LIKE", trim($datos->datos->nombre_producto)]
                                         ])
                                 ->orwhere([
-                                           ["productos.codigo_distribuidor","LIKE",$datos->datos->nombre_producto]
+                                           ["productos.codigo_distribuidor","LIKE",trim($datos->datos->nombre_producto)]
                                         ])
                         ->groupby('productos.id')
                         ->orderby('total_existencias_unidades',"DESC")        
@@ -183,8 +183,8 @@ class Reportes {
                     }
                     
                     if($datos->datos->nombre_producto!=""){
-                         $arr_where[$i]=["productos.codigo_producto","LIKE",$datos->datos->nombre_producto];
-                         $arr_where_2[$i]=["productos.codigo_distribuidor","LIKE",$datos->datos->nombre_producto];       
+                         $arr_where[$i]=["productos.codigo_producto","LIKE",trim($datos->datos->nombre_producto)];
+                         $arr_where_2[$i]=["productos.codigo_distribuidor","LIKE",trim($datos->datos->nombre_producto)];       
                          $i++;
                          
                     }

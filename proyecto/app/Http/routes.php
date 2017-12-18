@@ -197,3 +197,38 @@ Route::get("/actualizar_precio_compra",function(){
             
         }
 });
+Route::get("/actualizar_cantidades_existencias",function(){
+    $p=DB::table("detalle_inventarios")
+           ->join("productos","productos.id","=","detalle_inventarios.fk_id_producto") 
+           ->select("productos.unidades_por_caja",
+                    "productos.unidades_por_blister",
+                    "detalle_inventarios.cantidad_existencias_unidades",
+                    "detalle_inventarios.cantidad_existencias_blister",
+                    "detalle_inventarios.cantidad_existencias",
+                    "detalle_inventarios.id")
+           ->get();
+        foreach ($p as $key => $value) {
+            
+            echo "==========================\n";
+            /*echo $value->codigo_producto."\n";
+            echo $value->precio_compra."\n";
+            echo $value->precio_compra_blister."\n";
+            echo $value->precio_compra_unidad."\n";
+            echo $value->unidades_por_caja."\n";
+            echo $value->unidades_por_blister."\n";*/
+            echo $value->id ;
+            echo "<br>"; 
+            echo floor($value->cantidad_existencias_unidades/$value->unidades_por_blister);
+            echo "<br>"; 
+            echo floor(floor($value->cantidad_existencias_unidades/$value->unidades_por_blister)/$value->unidades_por_caja); 
+            echo "<br>"; 
+            echo "==========================\n";
+            
+            DB::table("detalle_inventarios")
+                ->where("id","=",$value->id)
+                ->update([
+                        "cantidad_existencias_blister"=>floor($value->cantidad_existencias_unidades/$value->unidades_por_blister),
+                         "cantidad_existencias"=>floor(floor($value->cantidad_existencias_unidades/$value->unidades_por_blister)/$value->unidades_por_caja)]);
+            
+        }
+});

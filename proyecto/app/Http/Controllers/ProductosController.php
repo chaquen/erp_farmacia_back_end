@@ -49,10 +49,19 @@ class ProductosController extends Controller
       public function store(Request $request)
     {
         //
+        $datos=json_decode($request->get('datos'));
+        
+        if($datos->datos->fk_id_departamento==0){
+            return response()->json(["mensaje"=>"Por favor selecciona una categoria","respuesta"=>false]);
+        }
+        if($datos->datos->fk_id_proveedor==0){
+            return response()->json(["mensaje"=>"por favor selecciona un proveedor","respuesta"=>false]);
+        }
+
         $prod=new Producto();
         $dt=new DetalleInventario();
         $mi=new MovimientosInventario();
-        $datos=json_decode($request->get('datos'));
+       
         //consulto que no exista producto
         $pro=$prod->consultar_por_campo(array(array("codigo_producto",'=',$datos->datos->codigo_producto)),"AND",array());
 
@@ -396,12 +405,12 @@ class ProductosController extends Controller
        
         $prod=new Producto();
         
-        return $prod->buscar_producto_por_sede($pro,$sede);
+        return $prod->buscar_producto_por_sede(trim($pro),$sede);
     }
     public function traer_productos_para_factura($pro,$sede){
        
         $prod=new Producto();
-        return $prod->buscar_producto_por_sede_para_factura($pro,$sede);
+        return $prod->buscar_producto_por_sede_para_factura(trim($pro),$sede);
     }
     public function buscar_proveedor() {
         $pro=DB::table("productos")
@@ -428,32 +437,34 @@ class ProductosController extends Controller
         $nom_tabla;
         $valor=$datos->datos->valor;
         $sede=$datos->datos->sede;
-        echo "sede\n";
-        var_dump($sede);
-        echo "campo\n";
-        var_dump($campo);
-        echo "valor\n";
-        var_dump($valor);
-        echo "columna_dt\n";
-        var_dump(count($columan_dt));
-        echo "columna2_pr\n";
-        var_dump(count($columan2_pr));
+        $usuario=$datos->datos->usuario;
+        //echo "sede\n";
+        //var_dump($sede);
+        //echo "campo\n";
+        //var_dump($campo);
+        //echo "valor\n";
+        //var_dump($valor);
+        //echo "columna_dt\n";
+        //var_dump(count($columan_dt));
+        //echo "columna2_pr\n";
+        //var_dump(count($columan2_pr));
         
         if(count($columan_dt)>0){
             $id_producto=$datos->datos->id_producto_inventario;
             $nom_tabla="detalle_inventarios";
-        }else{
+        }
+        else{
             $id_producto=$datos->datos->id_producto;            
             $nom_tabla="productos";
         }
-        echo "id_producto\n";
-        var_dump($datos->datos->id_producto);
-        echo "id_producto_inventario\n";
-        var_dump($datos->datos->id_producto_inventario);
-        echo "id_producto\n";
-        var_dump($id_producto);
-        echo "nombre_columna\n";
-        var_dump($nom_tabla);
+        //echo "id_producto\n";
+        //var_dump($datos->datos->id_producto);
+        //echo "id_producto_inventario\n";
+        //var_dump($datos->datos->id_producto_inventario);
+        //echo "id_producto\n";
+        //var_dump($id_producto);
+        //echo "nombre_columna\n";
+        //var_dump($nom_tabla);
         if($nom_tabla=="productos"){
             if($sede==0 ){
 
@@ -604,24 +615,24 @@ class ProductosController extends Controller
                                         ->where("productos.id","=",$id_producto)        
                                         ->update(["precio_compra_blister"=>(int)$d[0]->precio_compra/(int)$valor,"precio_compra_unidad"=>(int)((int)$d[0]->precio_compra/(int)$valor)/(int)$d[0]->unidades_por_blister]);
 
-                                echo $value->nombre_sede."\n";
-                                var_dump("id = ".$value->id);
-                                echo "\n";
-                                echo "cantidad_existencias\n";
-                                var_dump(floor(((int)$d[0]->cantidad_existencias_unidades/(int)$d[0]->unidades_por_blister)/(int)$valor));
-                                echo "cantidad_existencias_blister\n";
-                                var_dump(floor(((int)$d[0]->cantidad_existencias_unidades/(int)$d[0]->unidades_por_blister)));
+                                //echo $value->nombre_sede."\n";
+                                //var_dump("id = ".$value->id);
+                                //echo "\n";
+                                //echo "cantidad_existencias\n";
+                                //var_dump(floor(((int)$d[0]->cantidad_existencias_unidades/(int)$d[0]->unidades_por_blister)/(int)$valor));
+                                //echo "cantidad_existencias_blister\n";
+                                //var_dump(floor(((int)$d[0]->cantidad_existencias_unidades/(int)$d[0]->unidades_por_blister)));
                                 
                                 DB::table("detalle_inventarios")
                                     ->where("id","=",$d[0]->id)
                                     ->update([
                                                 "cantidad_existencias"=>floor(((int)$d[0]->cantidad_existencias_unidades/(int)$d[0]->unidades_por_blister)/(int)$valor),
                                                 "cantidad_existencias_blister"=>floor(((int)$d[0]->cantidad_existencias_unidades/(int)$d[0]->unidades_por_blister))]);
-                                var_dump($d[0]->cantidad_existencias);
-                                var_dump($d[0]->id);
-                                echo "\n";
-                                var_dump($d[0]->cantidad_existencias_blister);
-                                var_dump($d);
+                                //var_dump($d[0]->cantidad_existencias);
+                                //var_dump($d[0]->id);
+                                //echo "\n";
+                                //var_dump($d[0]->cantidad_existencias_blister);
+                                //var_dump($d);
                                 
                             }
                             
@@ -655,25 +666,25 @@ class ProductosController extends Controller
                                         ->update(["precio_compra_blister"=>(int)$d[0]->precio_compra/(int)$d[0]->unidades_por_caja,"precio_compra_unidad"=>(int)((int)$d[0]->precio_compra/(int)$d[0]->unidades_por_caja)/(int)$valor]);
                                 
                                 if(count($d)>0){
-                                    echo $value->nombre_sede."\n";
-                                    var_dump("id = ".$value->id);
-                                    echo "\n";
-                                    var_dump($d);
-                                    echo "cantidad_existencias\n";
-                                    var_dump(floor(((int)$d[0]->cantidad_existencias_unidades/(int)$valor)/(int)$d[0]->unidades_por_caja));
-                                    echo "cantidad_existencias_blister\n";
-                                    var_dump(floor(((int)$d[0]->cantidad_existencias_unidades/(int)$valor)));
+                                    //echo $value->nombre_sede."\n";
+                                    //var_dump("id = ".$value->id);
+                                    //echo "\n";
+                                    //var_dump($d);
+                                    //echo "cantidad_existencias\n";
+                                    //var_dump(floor(((int)$d[0]->cantidad_existencias_unidades/(int)$valor)/(int)$d[0]->unidades_por_caja));
+                                    //echo "cantidad_existencias_blister\n";
+                                    //var_dump(floor(((int)$d[0]->cantidad_existencias_unidades/(int)$valor)));
                                     
                                     DB::table("detalle_inventarios")
                                         ->where("id","=",$d[0]->id)
                                         ->update([  
                                                     "cantidad_existencias"=>floor(((int)$d[0]->cantidad_existencias_unidades/(int)$valor)/(int)$d[0]->unidades_por_caja),
                                                     "cantidad_existencias_blister"=>floor(((int)$d[0]->cantidad_existencias_unidades/(int)$valor))]);
-                                    var_dump($d[0]->cantidad_existencias);
-                                    var_dump($d[0]->id);
-                                    echo "\n";
-                                    var_dump($d[0]->cantidad_existencias_blister);
-                                    var_dump($d);
+                                    //var_dump($d[0]->cantidad_existencias);
+                                    //var_dump($d[0]->id);
+                                    //echo "\n";
+                                    //var_dump($d[0]->cantidad_existencias_blister);
+                                    //var_dump($d);
                                 }
                                 
                             }
@@ -770,8 +781,8 @@ class ProductosController extends Controller
                              
                              $porcentaje=(double)round((($dif)*100)/$valor,2);
                           
-                             echo "%";
-                             var_dump($porcentaje);
+                             //echo "%";
+                             //var_dump($porcentaje);
                              DB::table("detalle_inventarios")
                                      ->where([["fk_id_producto","=",$datos->datos->id_producto],["fk_id_sede","=",$sede]])
                                      ->update(["porcentaje_ganancia_sede_unidad"=>$porcentaje]);
@@ -838,9 +849,9 @@ class ProductosController extends Controller
                              ->update([$campo=>$valor]);   
                      } 
                      //no actualiza minimo inventario
-                     echo "--";
-                     var_dump($campo2);
-                     var_dump($valor);
+                     //echo "--";
+                     //var_dump($campo2);
+                     //var_dump($valor);
                      if($actualizar2){
                          DB::table("detalle_inventarios")
                          ->where([
@@ -875,23 +886,43 @@ class ProductosController extends Controller
             
                 switch ($campo){
                     case "cantidad_existencias_unidades":
+                        if($valor<0){
+                            return response()->json(["respuesta"=>false,"mensaje"=>"la unidades no pueden ser negativas"]);
+                        }
                         $d=DB::table($nom_tabla)
                                 ->join("productos","productos.id","=",$nom_tabla.".fk_id_producto")
-                             ->where($nom_tabla.".id","=",$id_producto)
-                            ->get();
-                        echo floor((int)$valor/(int)$d[0]->unidades_por_blister)."--\n";
-                        echo floor(((int)$valor/(int)$d[0]->unidades_por_blister)/(int)$d[0]->unidades_por_caja);
+                                ->where($nom_tabla.".id","=",$id_producto)
+                                ->get();
+                        //echo floor((int)$valor/(int)$d[0]->unidades_por_blister)."--\n";
+                        //echo floor(((int)$valor/(int)$d[0]->unidades_por_blister)/(int)$d[0]->unidades_por_caja);
+                        
                         if($valor>0){
                             $es="activo";
                         }else{
                             $es="agotado";
                         }
+
                         DB::table($nom_tabla)
                             ->where("id","=",$id_producto)
                              ->update([ 
                                         "cantidad_existencias_blister"=>floor((int)$valor/(int)$d[0]->unidades_por_blister),
                                         "cantidad_existencias"=>floor(((int)$valor/(int)$d[0]->unidades_por_blister)/(int)$d[0]->unidades_por_caja),
                                         "estado_inventario"=>$es]);
+
+
+                        DB::table("movimientos_inventario")
+                              ->insert(["fk_id_det_inventario"=>$id_producto,
+                                        "habia"=>$d[0]->cantidad_existencias_unidades,
+                                        "tipo"=>"AJUSTE",
+                                        "descripcion"=>"unidad",
+                                        "cantidad"=>$valor,
+                                        "quedan"=>$valor,
+                                        "observaciones"=>"Ajuste de unidades en inventario ".$datos->hora_cliente,
+                                        "fk_id_usuario"=>$usuario,
+                                        "updated_at"=>$datos->hora_cliente,
+                                        "created_at"=>$datos->hora_cliente  ]);       
+                        
+
                         break;
                     case "minimo_inventario":
                         $campo.="_sede";

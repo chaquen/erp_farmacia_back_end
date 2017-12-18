@@ -507,7 +507,11 @@ class FacturaController extends Controller
                     "updated_at"=>$datos->hora_cliente,
                     "created_at"=>$datos->hora_cliente,
                     "registro_factura"=>$datos->hora_cliente]);
-   
+
+          $f=DB::table("facturas")
+            ->where("id","=",$datos->datos->id)
+            ->get();
+          
           $id_dt_fac=DB::table("detalle_entrada_contables")
             ->insertGetId(["fk_id_entrada_contable"=>"1",
                       "fk_id_usuario"=>$datos->datos->fk_id_vendedor,
@@ -534,6 +538,16 @@ class FacturaController extends Controller
               //si tipo de venat es blister descontar unidades * numero de unidades por blister
               //si tipo de venta es caja descontar unidades * numero de caja  
               //var_dump($value);
+              
+             $habia=DB::table("detalle_inventarios")
+                         ->join("productos","productos.id","=","detalle_inventarios.fk_id_producto")
+                         ->where(
+                                "detalle_inventarios.id","=",$value->id_producto_inventario
+                            )
+                           
+                         ->get();   
+                 
+             $total=0;
              if($value->inventario==1){ 
                 switch ($value->tipo_venta) {
                    case 'unidad':
@@ -541,29 +555,29 @@ class FacturaController extends Controller
                            DB::table("detalle_inventarios")
                            ->where("id","=",$value->id_producto_inventario)
                            ->decrement("cantidad_existencias_unidades",(int)$value->cantidad_producto);
-                     # code...
+                     $total=(int)$value->cantidad_producto;
                      break;
                    case 'blister':
                            DB::table("detalle_inventarios")
                            ->where("id","=",$value->id_producto_inventario)
                            ->decrement("cantidad_existencias_unidades",(int)$value->cantidad_producto*(int)$value->unidades_por_blister);
                      # code...
+                     $total=(int)$value->cantidad_producto*(int)$value->unidades_por_blister;
                      break;
                    case 'caja':
                          DB::table("detalle_inventarios")
                            ->where("id","=",$value->id_producto_inventario)
                            ->decrement("cantidad_existencias_unidades",floor((int)$value->cantidad_producto*(int)$value->unidades_por_blister)*(int)$value->unidades_por_caja);
-
+                        $total=(int)$value->unidades_por_blister*(int)$value->unidades_por_caja;   
                      break;
 
                  } 
-                $pp=DB::table("detalle_inventarios")
-                        ->join("productos","productos.id","=","detalle_inventarios.fk_id_producto")
-                     ->where([["detalle_inventarios.id","=",$value->id_producto_inventario],["detalle_inventarios.minimo_inventario_sede","<=","detalle_inventarios.cantidad_existencias_unidades"]])
-                        ->orwhere([["detalle_inventarios.id","=",$value->id_producto_inventario],["detalle_inventarios.cantidad_existencias_unidades","=",0]])
-                        
-                     ->get();   
-                //var_dump($pp);
+                 $pp=DB::table("detalle_inventarios")
+                         ->join("productos","productos.id","=","detalle_inventarios.fk_id_producto")
+                         ->where([["detalle_inventarios.id","=",$value->id_producto_inventario],["detalle_inventarios.minimo_inventario_sede","<=","detalle_inventarios.cantidad_existencias_unidades"]])
+                            ->orwhere([["detalle_inventarios.id","=",$value->id_producto_inventario],["detalle_inventarios.cantidad_existencias_unidades","=",0]])
+                         ->get();   
+                 //var_dump($pp);
                 
                  if(count($pp)>0){
                      
@@ -596,14 +610,30 @@ class FacturaController extends Controller
                       
                  }
 
-               $quedan=DB::table("detalle_inventarios")
+                  $quedan=DB::table("detalle_inventarios")
                        ->where("id","=",$value->id_producto_inventario)
                        ->get();    
 
                    DB::table("detalle_inventarios")
-                 ->where("id","=",$value->id_producto_inventario)
-                 ->update(["cantidad_existencias_blister"=>floor((int)$quedan[0]->cantidad_existencias_unidades*(int)$value->unidades_por_blister),
-                           "cantidad_existencias"=>floor(((int)$quedan[0]->cantidad_existencias_unidades*(int)$value->unidades_por_blister)*$value->unidades_por_caja)]);    
+                     ->where("id","=",$value->id_producto_inventario)
+                     ->update(["cantidad_existencias_blister"=>floor((int)$quedan[0]->cantidad_existencias_unidades/(int)$value->unidades_por_blister),
+                           "cantidad_existencias"=>floor(((int)$quedan[0]->cantidad_existencias_unidades/(int)$value->unidades_por_blister)/$value->unidades_por_caja)]);    
+
+                  //REGISTRO MOVIMIENTOS INVENTARIO
+                  
+                  DB::table("movimientos_inventario")
+                      ->insert(["fk_id_det_inventario"=>$value->id_producto_inventario,
+                                "habia"=>$habia[0]->cantidad_existencias_unidades,
+                                "tipo"=>"SALIDA",
+                                "descripcion"=>$value->tipo_venta,
+                                "cantidad"=>$total,
+                                "quedan"=>$quedan[0]->cantidad_existencias_unidades,
+                                "observaciones"=>"Registro venta factura ".$f[0]->numero_factura,
+                                "fk_id_usuario"=>$datos->datos->fk_id_vendedor,
+                                "updated_at"=>$datos->hora_cliente,
+                                "created_at"=>$datos->hora_cliente  ]);   
+
+
                   
               }
               
