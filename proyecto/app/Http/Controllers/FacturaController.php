@@ -196,8 +196,7 @@ class FacturaController extends Controller
             "fk_id_cliente"=>$datos->datos->fk_id_cliente,
             "updated_at"=>$datos->hora_cliente, 
 
-            ),
-                             array("id","=",$id)));
+            ),array("id","=",$id)));
     }
 
     /**
@@ -395,18 +394,18 @@ class FacturaController extends Controller
                     $fac=DB::table("facturas")
                          ->where([
 
-                                    ["fk_id_sede","=",$sede],
-                                    ["registro_factura",">=",$dia." 00:00:00"],
-                                    ["registro_factura","<=",$dia." 23:59:59"],
+                                ["fk_id_sede","=",$sede],
+                                ["registro_factura",">=",$dia." 00:00:00"],
+                                ["registro_factura","<=",$dia." 23:59:59"],
 
                             ])
                         ->get();   
 
             if(count($fac)>0){
-                   return response()->json(["mensaje"=>"facturas encontradas","datos"=>$fac,"respuesta"=>true]); 
+                return response()->json(["mensaje"=>"facturas encontradas","datos"=>$fac,"respuesta"=>true]); 
             }
             
-            return response()->json(["mensaje"=>"facturas NO encontradas","respuesta"=>false]);
+                return response()->json(["mensaje"=>"facturas NO encontradas","respuesta"=>false]);
              
     }
 
@@ -500,7 +499,11 @@ class FacturaController extends Controller
         $datos=json_decode($request->get("datos"));
         //actualzizar el estado de la factura 
         // actualziar unidades
-        DB::table("facturas")
+        $fact=DB::table("facturas")
+           ->where("id","=",$datos->datos->id)
+           ->get();
+        if($fact[0]->estado_factura!="paga"){
+            DB::table("facturas")
           ->where("id","=",$datos->datos->id)
           ->update(["estado_factura"=>"paga",
                     "valor_real_factura"=>(float)$datos->datos->valor_real_factura,
@@ -640,7 +643,11 @@ class FacturaController extends Controller
           }
           
 
-          return response()->json(["mensaje"=>"factura registrada","respuesta"=>true]);            
+          return response()->json(["mensaje"=>"factura registrada","respuesta"=>true]);                
+        }else{
+            return response()->json(["mensaje"=>"esta fatura ya esta registrada","respuesta"=>false]);                
+        }
+        
 
     }    
 }
