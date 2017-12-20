@@ -286,7 +286,7 @@ class Producto extends Model
                                 ["codigo_producto",'=',trim($pro)],
                                 ["fk_id_sede","=",$sede],
                                 ["detalle_inventarios.cantidad_existencias_unidades",">=",1],
-                                ["detalle_inventarios.estado_inventario","=","activo"],
+                                //["detalle_inventarios.estado_inventario","=","activo"],
                                 
                             ]
                         
@@ -297,7 +297,7 @@ class Producto extends Model
                                 ["codigo_distribuidor",'=',trim($pro)],
                                 ["fk_id_sede","=",$sede],
                                 ["detalle_inventarios.cantidad_existencias_unidades",">=",1],
-                                ["detalle_inventarios.estado_inventario","=","activo"],
+                                //["detalle_inventarios.estado_inventario","=","activo"],
                                 
                             ]
                         

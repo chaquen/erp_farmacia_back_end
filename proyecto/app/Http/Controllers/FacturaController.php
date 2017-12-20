@@ -235,39 +235,6 @@ class FacturaController extends Controller
             DB::table("detalle_facturas")
                 ->where("id","=",$value->id_fac)
                 ->delete();
-
-//            if($value->tipo_venta=="unidad"){
-//                  DB::table("detalle_inventarios")
-//                    ->where("detalle_inventarios.id","=",$value->id)
-//                    ->increment("cantidad_existencias_unidades",$value->cantidad_producto);   
-//            }else if($value->tipo_venta=="blister"){
-//                DB::table("detalle_inventarios")
-//                    ->where("detalle_inventarios.id","=",$value->id)
-//                    ->increment("cantidad_existencias_unidades",$value->cantidad_producto*$value->unidades_por_blister); 
-//            }else if($value->tipo_venta=="caja"){
-//                DB::table("detalle_inventarios")
-//                    ->where("detalle_inventarios.id","=",$value->id)
-//                    ->increment("cantidad_existencias_unidades",($value->cantidad_producto*$value->unidades_por_blister)*$value->unidades_por_caja); 
-//            }
-//
-//            $quedan=DB::table("detalle_inventarios")
-//                        ->join("productos","productos.id","=","detalle_inventarios.fk_id_producto")
-//                         ->where("detalle_inventarios.id","=",$id)    
-//                         ->select("detalle_inventarios.id",
-//                          "productos.unidades_por_caja",
-//                          "productos.unidades_por_blister",
-//                          "detalle_inventarios.cantidad_existencias_unidades",
-//                          "detalle_inventarios.cantidad_existencias",
-//                          "detalle_inventarios.cantidad_existencias_blister"  )   
-//                         ->get();
-//
-//             DB::table("detalle_inventarios")
-//                    ->where( "id","=",$value->id)
-//                    ->update(["cantidad_existencias_blister"=>floor($quedan[0]->cantidad_existencias_unidades/$quedan[0]->unidades_por_blister),
-//                             "cantidad_existencias"=>floor(($quedan[0]->cantidad_existencias_unidades/$quedan[0]->unidades_por_blister)/$quedan[0]->unidades_por_caja)]);
-
-               
-            
         }        
 
         //CONSULTAR TICKET PENDIENTES DE LA MISMA SEDE Y

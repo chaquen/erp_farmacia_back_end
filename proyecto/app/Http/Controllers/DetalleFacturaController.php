@@ -60,8 +60,10 @@ class DetalleFacturaController extends Controller
          $hay=DB::table("detalle_inventarios")
             ->join("productos","productos.id","=","detalle_inventarios.fk_id_producto")     
             ->where("detalle_inventarios.id","=",$datos->datos->producto->id_producto_inventario)
-            ->select("detalle_inventarios.cantidad_existencias_unidades","productos.inventario")     
+            ->select("detalle_inventarios.cantidad_existencias_unidades","productos.inventario","productos.unidades_por_blister","productos.unidades_por_caja")     
             ->get();  
+            //var_dump($hay);
+
          //var_dump($datos->datos->producto);    
         if(count($sel)>0){
             
@@ -69,10 +71,41 @@ class DetalleFacturaController extends Controller
             $solictadas=0;
 
             foreach ($sel as $key => $value) {
-                $solictadas+=(int)$value->cantidad_producto;    
+                
+                switch ($value->tipo_venta) {
+                    case 'unidad':
+                        # code...
+                        $solictadas+=(int)$value->cantidad_producto;     
+                        break;
+                    case 'blister':
+                        $solictadas+=(int)$value->cantidad_producto*$hay[0]->unidades_por_blister;    
+                        
+                        break;
+                    case 'caja':
+                        # code...
+                        $solictadas+=(int)$value->cantidad_producto*$hay[0]->unidades_por_caja;    
+                        break;
+                }
+                
             }
+
+            switch ($value->tipo_venta) {
+                    case 'unidad':
+                        # code...
+                        $solictadas+=(int)$datos->datos->producto->cantidad_producto;     
+                        break;
+                    case 'blister':
+                        $solictadas+=(int)$datos->datos->producto->cantidad_producto*$hay[0]->unidades_por_blister;    
+                        
+                        break;
+                    case 'caja':
+                        # code...
+                        $solictadas+=(int)$datos->datos->producto->cantidad_producto*$hay[0]->unidades_por_caja;    
+                        break;
+                }
+
             //var_dump($solictadas);
-            if($hay[0]->inventario == 1 && $hay[0]->cantidad_existencias_unidades >= ((int)$solictadas+(int)$datos->datos->producto->cantidad_producto)){
+            if($hay[0]->inventario == 1 && $hay[0]->cantidad_existencias_unidades >= (int)$solictadas){
                 $id=DB::table("detalle_facturas")
                     ->insertGetId(array(
                                 "fk_id_factura"=>$datos->datos->id_ticket,
@@ -196,7 +229,7 @@ class DetalleFacturaController extends Controller
         if(count($sel)>0){
             
             
-            $solictadas=0;
+            /*$solictadas=0;
 
             foreach ($sel as $key => $value) {
                 
@@ -217,11 +250,55 @@ class DetalleFacturaController extends Controller
                         $solictadas+=(int)$datos->datos->producto->cantidad_producto;      
                     }
                 }
-                
-                
+            }*/
 
+
+            $solictadas=0;
+            $tp="";
+            foreach ($sel as $key => $value) {
+                if($value->id==$datos->datos->producto->id_factura){
+                    
+                }else{
+                    switch ($value->tipo_venta) {
+                        case 'unidad':
+                            # code...
+                            $solictadas+=(int)$value->cantidad_producto;     
+                            break;
+                        case 'blister':
+                            $solictadas+=(int)$value->cantidad_producto*$hay[0]->unidades_por_blister;    
+                            
+                            break;
+                        case 'caja':
+                            # code...
+                            $solictadas+=(int)$value->cantidad_producto*$hay[0]->unidades_por_caja;    
+                            break;
+                    }    
+                }
+                
+                
             }
-            
+            //var_dump($solictadas);
+            if($value->id==$datos->datos->producto->id_factura){
+                    $tp=$datos->datos->producto->tipo_venta;
+                }else{
+                    $tp=$value->tipo_venta;
+                }
+            switch ($datos->datos->producto->tipo_venta) {
+                    case 'unidad':
+                        # code...
+                        $solictadas+=(int)$datos->datos->producto->cantidad_producto;     
+                        break;
+                    case 'blister':
+                        $solictadas+=(int)$datos->datos->producto->cantidad_producto*$hay[0]->unidades_por_blister;    
+                        
+                        break;
+                    case 'caja':
+                        # code...
+                        $solictadas+=(int)$datos->datos->producto->cantidad_producto*$hay[0]->unidades_por_caja;    
+                        break;
+                }
+
+            //var_dump($solictadas);
             if((int)$hay[0]->cantidad_existencias_unidades >= (int)$solictadas){
 
                     //var_dump((int)$hay[0]->cantidad_existencias_unidades);
