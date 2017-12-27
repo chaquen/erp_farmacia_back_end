@@ -209,7 +209,7 @@ class DetalleFacturaController extends Controller
 
 
         $datos=json_decode($request->get("datos"));
-        //aqui debo validar las unidades ya solictadas y en caso de que no existan suficientes no registrar
+       
     
         $sel=DB::table("detalle_facturas")
             ->where([   
@@ -229,33 +229,12 @@ class DetalleFacturaController extends Controller
         if(count($sel)>0){
             
             
-            /*$solictadas=0;
-
-            foreach ($sel as $key => $value) {
-                
-                if($value->id!=$datos->datos->producto->id_factura){
-                    if($value->tipo_venta=="caja"){
-                        $solictadas+=((int)$value->cantidad_producto*(int)$hay[0]->unidades_por_blister)*(int)$hay[0]->unidades_por_caja;
-                    }else if($value->tipo_venta=="blister"){
-                        $solictadas+=(int)$value->cantidad_producto*(int)$hay[0]->unidades_por_blister;  
-                    }else{
-                        $solictadas+=(int)$value->cantidad_producto;      
-                    }
-                }else{
-                    if($value->tipo_venta=="caja"){
-                        $solictadas+=((int)$datos->datos->producto->cantidad_producto*(int)$hay[0]->unidades_por_blister)*(int)$hay[0]->unidades_por_caja;
-                    }else if($value->tipo_venta=="blister"){
-                        $solictadas+=(int)$datos->datos->producto->cantidad_producto*(int)$hay[0]->unidades_por_blister;  
-                    }else{
-                        $solictadas+=(int)$datos->datos->producto->cantidad_producto;      
-                    }
-                }
-            }*/
-
-
+           
             $solictadas=0;
             $tp="";
+            //sumo la unidades solicitadas del producto
             foreach ($sel as $key => $value) {
+
                 if($value->id==$datos->datos->producto->id_factura){
                     
                 }else{
@@ -277,29 +256,34 @@ class DetalleFacturaController extends Controller
                 
                 
             }
+
             //var_dump($solictadas);
+
             if($value->id==$datos->datos->producto->id_factura){
                     $tp=$datos->datos->producto->tipo_venta;
-                }else{
+            }else{
                     $tp=$value->tipo_venta;
-                }
+            }    
+            $hay_uni=0;
             switch ($datos->datos->producto->tipo_venta) {
                     case 'unidad':
                         # code...
+                        $hay_uni=(int)$hay[0]->cantidad_existencias_unidades;
                         $solictadas+=(int)$datos->datos->producto->cantidad_producto;     
                         break;
                     case 'blister':
                         $solictadas+=(int)$datos->datos->producto->cantidad_producto*$hay[0]->unidades_por_blister;    
-                        
+                        $hay_uni=(int)$hay[0]->cantidad_existencias_blister;
                         break;
                     case 'caja':
                         # code...
-                        $solictadas+=(int)$datos->datos->producto->cantidad_producto*$hay[0]->unidades_por_caja;    
+                        $solictadas+=(int)$datos->datos->producto->cantidad_producto*$hay[0]->unidades_por_caja;
+                        $hay_uni=(int)$hay[0]->cantidad_existencias;    
                         break;
                 }
 
             //var_dump($solictadas);
-            if((int)$hay[0]->cantidad_existencias_unidades >= (int)$solictadas){
+            if($hay_uni >= (int)$solictadas){
 
                     //var_dump((int)$hay[0]->cantidad_existencias_unidades);
                     //var_dump((int)$solictadas);
@@ -329,10 +313,7 @@ class DetalleFacturaController extends Controller
                         ));  
 
             }else{
-                /*DB::table("detalle_inventarios")
-                    ->where("id","=",$datos->datos->producto->id_producto_inventario)
-                    ->update(["estado_inventario"=>"agotado"]);*/
-
+                
                 return response()->json(["mensaje"=>"No hay unidades suficientes para la venta","respuesta"=>false]);    
             }
             
@@ -437,6 +418,7 @@ class DetalleFacturaController extends Controller
                                             )
                                        ->get(); 
                              if($dt2[0]->cantidad_existencias_unidades>0){
+
                                     DB::table("detalle_inventarios")
                                                 ->where( "id","=",$dt[0]->id)
                                                 ->update([
@@ -449,15 +431,15 @@ class DetalleFacturaController extends Controller
                              DB::table("detalle_inventarios")
                                                 ->where( "id","=",$dt[0]->id)
                                                 ->update([
-                                                           "cantidad_existencias_blister"=>$dt2[0]->cantidad_existencias_unidades/$dt[0]->unidades_por_blister,
-                                                            "cantidad_existencias"=>($dt2[0]->cantidad_existencias_unidades/$dt[0]->unidades_por_blister)/$dt[0]->unidades_por_caja
+                                                           "cantidad_existencias_blister"=>floor($dt2[0]->cantidad_existencias_unidades/$dt[0]->unidades_por_blister),
+                                                            "cantidad_existencias"=>floor(floor($dt2[0]->cantidad_existencias_unidades/$dt[0]->unidades_por_blister)/$dt[0]->unidades_por_caja)
 
                                                          ]);
                         break;
                     case 'caja':
                          DB::table("detalle_inventarios")
                             ->where("id","=",$dt[0]->fk_id_producto)
-                            ->increment("cantidad_existencias_unidades",($dt[0]->cantidad_producto*$dt[0]->unidades_por_blister)*$dt[0]->unidades_por_caja);   
+                            ->increment("cantidad_existencias_unidades",floor($dt[0]->cantidad_producto*$dt[0]->unidades_por_blister)*$dt[0]->unidades_por_caja);   
 
 
                              $dt2=DB::table("detalle_inventarios")
@@ -482,8 +464,8 @@ class DetalleFacturaController extends Controller
                              DB::table("detalle_inventarios")
                                                 ->where( "id","=",$dt[0]->id)
                                                 ->update([
-                                                           "cantidad_existencias_blister"=>$dt2[0]->cantidad_existencias_unidades/$dt[0]->unidades_por_blister,
-                                                            "cantidad_existencias"=>($dt2[0]->cantidad_existencias_unidades/$dt[0]->unidades_por_blister)/$dt[0]->unidades_por_caja
+                                                           "cantidad_existencias_blister"=>floor($dt2[0]->cantidad_existencias_unidades/$dt[0]->unidades_por_blister),
+                                                            "cantidad_existencias"=>floor(floor($dt2[0]->cantidad_existencias_unidades/$dt[0]->unidades_por_blister)/$dt[0]->unidades_por_caja)
 
                                                          ]); 
                             //CALCULAR CAJAS Y BLISTER
@@ -515,8 +497,8 @@ class DetalleFacturaController extends Controller
                              DB::table("detalle_inventarios")
                                                 ->where( "id","=",$dt[0]->id)
                                                 ->update([
-                                                           "cantidad_existencias_blister"=>$dt2[0]->cantidad_existencias_unidades/$dt[0]->unidades_por_blister,
-                                                            "cantidad_existencias"=>($dt2[0]->cantidad_existencias_unidades/$dt[0]->unidades_por_blister)/$dt[0]->unidades_por_caja
+                                                           "cantidad_existencias_blister"=>floor($dt2[0]->cantidad_existencias_unidades/$dt[0]->unidades_por_blister),
+                                                            "cantidad_existencias"=>floor(floor($dt2[0]->cantidad_existencias_unidades/$dt[0]->unidades_por_blister)/$dt[0]->unidades_por_caja)
 
                                                          ]);
                         # code...

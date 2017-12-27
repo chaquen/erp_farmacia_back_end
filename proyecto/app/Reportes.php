@@ -202,7 +202,7 @@ class Reportes {
                      }
                      //echo count($arr_where);
                     
-                    if(count($arr_where)>0){
+                    if(count($arr_where)>0 && count($arr_where_2)>0){
                           
                             $reporte=DB::table('productos')
                             ->join('detalle_inventarios','detalle_inventarios.fk_id_producto','=','productos.id')
@@ -235,31 +235,35 @@ class Reportes {
                                     'detalle_inventarios.cantidad_existencias_unidades AS total_existencias_unidades',
                                     'detalle_inventarios.cantidad_existencias_blister AS total_existencias_blister',
                                     'sedes.nombre_sede',
-                                    'detalle_inventarios.id as id_detalle_inventario')
+                                    'detalle_inventarios.id as id_detalle_inventario',
+                                    'detalle_inventarios.estado_inventario')
                             ->get();
 
-
-                     }
-                     else{
-                            
-                     }
-                    
-                        
-                       $arr_repo=[];
+                            $arr_repo=[];
                         $i=0;
+                        
                         foreach ($reporte as $key => $value) {
                             $arr_repo[$i]=(array)$value;
                             $i++;
                         }
-                if(count($arr_repo)>0){
-                    return ["mensaje"=>"REPORTE INVENTARIO ",
-                            "respuesta"=>true,
-                            "datos"=>$arr_repo];    
-                }else{
-                    return ["mensaje"=>"NO EXISTEN PRODCUTOS ACTIVOS PARA ESTA SEDE ",
-                            "respuesta"=>false,
-                            "datos"=>$arr_repo];    
-                }
+                        if(count($arr_repo)>0){
+                            return ["mensaje"=>"REPORTE INVENTARIO ",
+                                    "respuesta"=>true,
+                                    "datos"=>$arr_repo];    
+                        }else{
+                            return ["mensaje"=>"NO EXISTEN PRODCUTOS ACTIVOS PARA ESTA SEDE ",
+                                    "respuesta"=>false,
+                                    "datos"=>$arr_repo];    
+                        }
+                     }
+                     else{
+                         return ["mensaje"=>"DEBE SELECCIONAR ALGUNA SEDE",
+                                    "respuesta"=>false
+                                    ];       
+                     }
+                    
+                        
+
                 
     			
                     
@@ -847,7 +851,7 @@ class Reportes {
                                     ->where([
                                                 ['estado_factura','=','paga'],
                                                 ['registro_factura','>=',$datos->datos->fecha."  00:00:00"],
-                                                ['registro_factura','<=',$datos->hora_cliente]
+                                                ['registro_factura','<=',$datos->datos->fecha."  23:59:59"]
                                             ])
                                      ->where("facturas.fk_id_sede","=",$datos->datos->sede)
                                     
@@ -859,7 +863,7 @@ class Reportes {
                                     ->where([
                                                 ['estado_factura','=','endeuda'],
                                                 ['registro_factura','>=',$datos->datos->fecha."  00:00:00"],
-                                                ['registro_factura','<=',$datos->hora_cliente]
+                                                ['registro_factura','<=',$datos->datos->fecha."  23:59:59"]
                                             ])
                                      ->where("facturas.fk_id_sede","=",$datos->datos->sede)
                                     
@@ -876,7 +880,7 @@ class Reportes {
                                                 ["facturas.fk_id_sede","=",$datos->datos->sede],
                                                 ['estado_factura','=','paga'],
                                                 ['registro_factura','>=',$datos->datos->fecha."  00:00:00"],
-                                                ['registro_factura','<=',$datos->hora_cliente]
+                                                ['registro_factura','<=',$datos->datos->fecha."  23:59:59"]
                                             ])
                                             
                                         ->groupby('departamentos.id')
@@ -893,7 +897,7 @@ class Reportes {
                                    ->where([    
                                                 ['estado_credito','=','pendiente'],
                                                 ['detalle_credito_abonos.fecha_abono','>=',$datos->datos->fecha."  00:00:00"],
-                                                ['detalle_credito_abonos.fecha_abono','<=',$datos->hora_cliente],
+                                                ['detalle_credito_abonos.fecha_abono','<=',$datos->datos->fecha],
                                                 ["detalle_credito_abonos.fk_id_sede","=",$datos->datos->sede]
                                             ])
                                    ->select(DB::raw('SUM(detalle_credito_abonos.abono) AS total_abonos'))
@@ -929,7 +933,7 @@ class Reportes {
                                                 ["facturas.fk_id_sede","=",$datos->datos->sede],
                                                 ['estado_factura','=','paga'],
                                                 ['registro_factura','>=',$datos->datos->fecha."  00:00:00"],
-                                                ['registro_factura','<=',$datos->hora_cliente]
+                                                ['registro_factura','<=',$datos->datos->fecha." 23:59:59" ]
                                             ])
                                         
                                         ->select('facturas.id',

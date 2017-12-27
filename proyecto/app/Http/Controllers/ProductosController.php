@@ -769,7 +769,13 @@ class ProductosController extends Controller
                              break;
                          case "precio_mayoreo":
                              $campo2.="_sede";
+                             
+                             if($datos->datos->valor==0){
+                                $datos->datos->valor=0.1;
+                             }
+
                              $valor=(double)$datos->datos->valor;
+
                              
                               $pre_com=DB::table("productos")
                                      ->where("id","=",$datos->datos->id_producto)
@@ -784,11 +790,15 @@ class ProductosController extends Controller
                              //echo "%";
                              //var_dump($porcentaje);
                              DB::table("detalle_inventarios")
-                                     ->where([["fk_id_producto","=",$datos->datos->id_producto],["fk_id_sede","=",$sede]])
+                                     ->where([
+                                                ["fk_id_producto","=",$datos->datos->id_producto],
+                                                ["fk_id_sede","=",$sede]
+                                            ])
                                      ->update(["porcentaje_ganancia_sede_unidad"=>$porcentaje]);
                              
                              $actualizar=false;
                              $actualizar2=true;
+
                              break;
                          case "minimo_inventario":
                              
@@ -929,17 +939,31 @@ class ProductosController extends Controller
                        
                         
                         break;
-                   
+                    case "estado_inventario":
+                     //echo  $valor;
+                        break;   
                 }
                  DB::table($nom_tabla)
                     ->where("id","=",$id_producto)
                      ->update([$campo=>$valor]);
                  
             }
-            
-        
+            //echo "here ";
+            DB::table("movimientos_inventario")
+                ->insert(["fk_id_det_inventario"=>$id_producto,
+                                        "habia"=>0,
+                                        "tipo"=>"EDICION",
+                                        "descripcion"=>"n/a",
+                                        "cantidad"=>0,
+                                        "quedan"=>0,
+                                        "observaciones"=>"Ajuste de informacion del campo ".$campo." en inventario nuevo dato ".$valor. ", ajuste en la fecha ".$datos->hora_cliente,
+                                        "fk_id_usuario"=>$usuario,
+                                        "updated_at"=>$datos->hora_cliente,
+                                        "created_at"=>$datos->hora_cliente  ]);
         }
         
+        
+
         return response()->json(["respuesta"=>true,"mensaje"=>"Producto editado "]);
         
         

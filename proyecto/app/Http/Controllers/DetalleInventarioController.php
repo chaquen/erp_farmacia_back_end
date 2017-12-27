@@ -190,9 +190,9 @@ class DetalleInventarioController extends Controller
                 
                      }
                      else if($pro[0]->tipo_venta_producto=="CajaBlister"){
-                            DB::table('detalle_inventarios')
-                                ->where("detalle_inventarios.id","=",$id)
-                                ->increment('cantidad_existencias_unidades',(int)$datos->datos->cantidad_existencias*$pro[0]->unidades_por_caja);
+                                DB::table('detalle_inventarios')
+                                    ->where("detalle_inventarios.id","=",$id)
+                                    ->increment('cantidad_existencias_unidades',(int)$datos->datos->cantidad_existencias*$pro[0]->unidades_por_caja);
 
                               $quedan=DB::table("detalle_inventarios")
                                                              ->join("productos","productos.id","=","detalle_inventarios.fk_id_producto")
@@ -242,7 +242,7 @@ class DetalleInventarioController extends Controller
                         "descripcion"=>$datos->datos->tipo_entrada_inventario,
                         "cantidad"=>(int)$datos->datos->cantidad_existencias,
                         "quedan"=>(int)$pro[0]->cantidad_existencias+(int)$datos->datos->cantidad_existencias,
-                         "created_at"=>$datos->hora_cliente,
+                        "created_at"=>$datos->hora_cliente,
                         "updated_at"=>$datos->hora_cliente,   
                         "observaciones"=>"REGISTRO GENERADO AGREGAR ENTRADA INVENTARIO"
 
@@ -266,8 +266,8 @@ class DetalleInventarioController extends Controller
                                  "productos.tipo_venta_producto",
                                  "detalle_inventarios.cantidad_existencias_unidades",
                                  "detalle_inventarios.cantidad_existencias",
-                                "productos.unidades_por_caja",
-                                "productos.unidades_por_blister")
+                                 "productos.unidades_por_caja",
+                                 "productos.unidades_por_blister")
                         ->get();
                 
                 if($pro[0]->tipo_venta_producto=="Caja"){
@@ -600,6 +600,7 @@ class DetalleInventarioController extends Controller
             $habia=DB::table('detalle_inventarios')
                    ->where("id","=",$id)
                     ->get();
+                    
             DB::table('detalle_inventarios')
                 ->where("id","=",$id)
                 ->update(["cantidad_existencias_unidades"=>$datos->datos->cantidad_existencias_unidades,
@@ -653,13 +654,16 @@ class DetalleInventarioController extends Controller
              $habia=DB::table('detalle_inventarios')
                    ->where("id","=",$id)
                     ->get();
+            
             DB::table('detalle_inventarios')
                 ->where("id","=",$id)
                 ->update(["cantidad_existencias_blister"=>$datos->datos->cantidad_existencias_blister,
                         "updated_at"=>$datos->hora_cliente]);
+            
             $quedan=DB::table('detalle_inventarios')
                      ->where("id","=",$id)
                     ->get();
+
             DB::table('movimientos_inventario')
                     ->insert([
                         "fk_id_det_inventario"=>$id,

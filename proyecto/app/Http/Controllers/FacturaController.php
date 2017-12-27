@@ -437,7 +437,7 @@ class FacturaController extends Controller
                                                     "detalle_inventarios.precio_promo_venta",
                                                     "detalle_inventarios.promocion",
                                                     "detalle_inventarios.promo_desde",
-                                                    "detalle_inventarios.promo_hasta",                               
+                                                    "detalle_inventarios.promo_hasta",                              
                                                     "detalle_inventarios.tipo_venta_promo",
                                                     "productos.codigo_producto",
                                                     "productos.nombre_producto",
@@ -471,12 +471,12 @@ class FacturaController extends Controller
            ->get();
         if($fact[0]->estado_factura!="paga"){
             DB::table("facturas")
-          ->where("id","=",$datos->datos->id)
-          ->update(["estado_factura"=>"paga",
-                    "valor_real_factura"=>(float)$datos->datos->valor_real_factura,
-                    "updated_at"=>$datos->hora_cliente,
-                    "created_at"=>$datos->hora_cliente,
-                    "registro_factura"=>$datos->hora_cliente]);
+                ->where("id","=",$datos->datos->id)
+                ->update(["estado_factura"=>"paga",
+                          "valor_real_factura"=>(float)$datos->datos->valor_real_factura,
+                          "updated_at"=>$datos->hora_cliente,
+                          "created_at"=>$datos->hora_cliente,
+                          "registro_factura"=>$datos->hora_cliente]);
 
           $f=DB::table("facturas")
             ->where("id","=",$datos->datos->id)
@@ -521,33 +521,38 @@ class FacturaController extends Controller
              if($value->inventario==1){ 
                 switch ($value->tipo_venta) {
                    case 'unidad':
-                    # code...
+                        
+                           $total=(int)$value->cantidad_producto; 
                            DB::table("detalle_inventarios")
                            ->where("id","=",$value->id_producto_inventario)
-                           ->decrement("cantidad_existencias_unidades",(int)$value->cantidad_producto);
-                     $total=(int)$value->cantidad_producto;
+                           ->decrement("cantidad_existencias_unidades",$total);
+                     
                      break;
                    case 'blister':
+                           $total=(int)$value->cantidad_producto*(int)$value->unidades_por_blister;
                            DB::table("detalle_inventarios")
                            ->where("id","=",$value->id_producto_inventario)
-                           ->decrement("cantidad_existencias_unidades",(int)$value->cantidad_producto*(int)$value->unidades_por_blister);
+                           ->decrement("cantidad_existencias_unidades",$total);
                      # code...
-                     $total=(int)$value->cantidad_producto*(int)$value->unidades_por_blister;
+                     
                      break;
                    case 'caja':
+                         $total=(int)$value->unidades_por_blister*(int)$value->unidades_por_caja;    
                          DB::table("detalle_inventarios")
                            ->where("id","=",$value->id_producto_inventario)
-                           ->decrement("cantidad_existencias_unidades",floor((int)$value->cantidad_producto*(int)$value->unidades_por_blister)*(int)$value->unidades_por_caja);
-                        $total=(int)$value->unidades_por_blister*(int)$value->unidades_por_caja;   
+                           ->decrement("cantidad_existencias_unidades",$total);
+                        
                      break;
 
                  } 
-                 $pp=DB::table("detalle_inventarios")
-                         ->join("productos","productos.id","=","detalle_inventarios.fk_id_producto")
-                         ->where([["detalle_inventarios.id","=",$value->id_producto_inventario],["detalle_inventarios.minimo_inventario_sede","<=","detalle_inventarios.cantidad_existencias_unidades"]])
+
+
+                  $pp=DB::table("detalle_inventarios")
+                            ->join("productos","productos.id","=","detalle_inventarios.fk_id_producto")
+                            ->where([["detalle_inventarios.id","=",$value->id_producto_inventario],["detalle_inventarios.minimo_inventario_sede","<=","detalle_inventarios.cantidad_existencias_unidades"]])
                             ->orwhere([["detalle_inventarios.id","=",$value->id_producto_inventario],["detalle_inventarios.cantidad_existencias_unidades","=",0]])
-                         ->get();   
-                 //var_dump($pp);
+                            ->get();   
+                 
                 
                  if(count($pp)>0){
                      
@@ -612,7 +617,7 @@ class FacturaController extends Controller
 
           return response()->json(["mensaje"=>"factura registrada","respuesta"=>true]);                
         }else{
-            return response()->json(["mensaje"=>"esta fatura ya esta registrada","respuesta"=>false]);                
+            return response()->json(["mensaje"=>"esta factura ya esta registrada","respuesta"=>false]);                
         }
         
 
