@@ -473,6 +473,7 @@ class FacturaController extends Controller
             DB::table("facturas")
                 ->where("id","=",$datos->datos->id)
                 ->update(["estado_factura"=>"paga",
+                          "fk_id_vendedor"=>$datos->datos->fk_id_vendedor,
                           "valor_real_factura"=>(float)$datos->datos->valor_real_factura,
                           "updated_at"=>$datos->hora_cliente,
                           "created_at"=>$datos->hora_cliente,

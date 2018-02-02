@@ -598,6 +598,10 @@ class Reportes {
                                               'productos.nombre_producto',
                                               'productos.impuesto',
                                                'detalle_facturas.valor_item',
+                                               'detalle_facturas.updated_at',
+                                               'productos.precio_compra',
+                                                'productos.precio_compra_blister',
+                                                'productos.precio_compra_unidad',
                                                
                                                DB::raw('CONCAT(users.nombres," ",users.apellidos) nombre_usuario'),  
                                                 
@@ -655,6 +659,7 @@ class Reportes {
                                    'detalle_inventarios.porcentaje_ganancia_sede',
                                    'detalle_inventarios.porcentaje_ganancia_blister_sede',
                                    'detalle_inventarios.porcentaje_ganancia_sede_unidad',
+                                   'detalle_facturas.updated_at',
 
                                   DB::raw('CONCAT(users.nombres," ",users.apellidos) nombre_usuario'),  
                                   'productos.codigo_producto',

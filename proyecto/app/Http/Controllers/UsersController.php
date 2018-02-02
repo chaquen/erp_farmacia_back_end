@@ -50,7 +50,7 @@ class UsersController extends Controller
         $us=new User();
         $datos=json_decode($request->get("datos"));
 
-        $rr=$us->consultar_por_campo(array(array("email","=",$datos->datos->email)),"AND",array([]));
+        $rr=$us->consultar_por_campo(array(array("usuario","=",$datos->datos->documento)),"AND",array([]));
 
         if($rr["respuesta"]==false){
             
@@ -176,7 +176,8 @@ class UsersController extends Controller
         
         if($datos->datos->nueva_sede!=false){
             //registrar nueva sede
-            $exi=DB::table("detalle_cajero_sedes")
+            if($datos->datos->nueva_sede[0]!=0){
+                $exi=DB::table("detalle_cajero_sedes")
                     ->where([  
                                 ["fk_id_sede","=",$datos->datos->nueva_sede[0]],
                                 ["fk_id_usuario","=",$id]
@@ -185,12 +186,35 @@ class UsersController extends Controller
                              )
                     ->get();
             
-          if(count($exi)==0){
-                DB::table('detalle_cajero_sedes')
-                    ->insert(["fk_id_sede"=>$datos->datos->nueva_sede[0],
-                               "fk_id_usuario"=>$id,
-                                "tipo"=>$datos->datos->nueva_sede[1]]);
-          }
+              if(count($exi)==0){
+                    DB::table('detalle_cajero_sedes')
+                        ->insert(["fk_id_sede"=>$datos->datos->nueva_sede[0],
+                                   "fk_id_usuario"=>$id,
+                                    "tipo"=>$datos->datos->nueva_sede[1]]);
+              }
+            }else{
+                //todas las sedes
+                $s=DB::table("sedes")->get();
+                foreach ($s as $key => $value) {
+                    $exi=DB::table("detalle_cajero_sedes")
+                        ->where([  
+                                    ["fk_id_sede","=",$value->id],
+                                    ["fk_id_usuario","=",$id]
+                                ]
+                                   
+                                 )
+                        ->get();
+                
+                      if(count($exi)==0){
+                            DB::table('detalle_cajero_sedes')
+                                ->insert(["fk_id_sede"=>$value->id,
+                                           "fk_id_usuario"=>$id,
+                                            "tipo"=>$datos->datos->nueva_sede[1]]);
+                      }    
+                }
+                
+            }
+            
         }
         return response()->json($rr);
     }
@@ -244,8 +268,8 @@ class UsersController extends Controller
             ->join("detalle_cajero_sedes","users.id","=","detalle_cajero_sedes.fk_id_usuario")
             ->join('sedes','detalle_cajero_sedes.fk_id_sede',"=",'sedes.id')
             ->where([
-                    ["usuario","=",strtoupper($datos->datos->usario)],
-                    ["password","=",$datos->datos->password],
+                    ["users.usuario","=",strtoupper($datos->datos->usario)],
+                    ["users.password","=",$datos->datos->password],
                     ["detalle_cajero_sedes.fk_id_sede","=",$datos->datos->sede]                    
                 ])
             ->select(
@@ -265,7 +289,7 @@ class UsersController extends Controller
                  )
                 
             ->get();
-    
+        
          if(count($r)>0){
              
              if($r[0]->tipo=="cajero"){
@@ -277,7 +301,7 @@ class UsersController extends Controller
                  //var_dump($datos->datos->sede);  
 
                  
-                            //var_dump((int)explode(":",$ing_hora)[0]);    
+                            
                  switch($datos->datos->dia)
                  {
                      case 0:

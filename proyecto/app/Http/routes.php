@@ -28,16 +28,17 @@ Route::get('/consulta_inicial/{id_sede}/{rol}/{fecha}', function ($id_sede,$rol,
     $sedes=DB::table('sedes')->get();
     $cajeros= $r=DB::table("users")
             ->join("rols","users.fk_id_rol","=","rols.id")
-            ->join("detalle_cajero_sedes","detalle_cajero_sedes.fk_id_usuario","=","users.id")    
-            ->join("sedes","sedes.id","=","detalle_cajero_sedes.fk_id_sede")
-             ->where("sedes.id","=",$id_sede)   
+            //->join("detalle_cajero_sedes","detalle_cajero_sedes.fk_id_usuario","=","users.id")    
+            //->join("sedes","sedes.id","=","detalle_cajero_sedes.fk_id_sede")
+            //->where("sedes.id","=",$id_sede)   
+            ->where("rols.nombre_rol","<>","root")
             ->select(
                 'rols.nombre_rol',
                 'users.nombres',
                 'users.apellidos',
                 'users.id',
-                 'users.codigo_venta',   
-                'detalle_cajero_sedes.tipo'   
+                 'users.codigo_venta'
+                //'detalle_cajero_sedes.tipo'   
                 )
             ->get();
     $admin=$r=DB::table("users")
