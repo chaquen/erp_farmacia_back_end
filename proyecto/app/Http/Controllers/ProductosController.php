@@ -911,8 +911,8 @@ class ProductosController extends Controller
                         }else{
                             $es="agotado";
                         }
-
-                        DB::table($nom_tabla)
+                        if($d[0]->unidades_por_blister>= 1 && $d[0]->unidades_por_caja >= 1 ){
+                            DB::table($nom_tabla)
                             ->where("id","=",$id_producto)
                              ->update([ 
                                         "cantidad_existencias_blister"=>floor((int)$valor/(int)$d[0]->unidades_por_blister),
@@ -920,17 +920,21 @@ class ProductosController extends Controller
                                         "estado_inventario"=>$es]);
 
 
-                        DB::table("movimientos_inventario")
-                              ->insert(["fk_id_det_inventario"=>$id_producto,
-                                        "habia"=>$d[0]->cantidad_existencias_unidades,
-                                        "tipo"=>"AJUSTE",
-                                        "descripcion"=>"unidad",
-                                        "cantidad"=>$valor,
-                                        "quedan"=>$valor,
-                                        "observaciones"=>"Ajuste de unidades en inventario ".$datos->hora_cliente,
-                                        "fk_id_usuario"=>$usuario,
-                                        "updated_at"=>$datos->hora_cliente,
-                                        "created_at"=>$datos->hora_cliente  ]);       
+                            DB::table("movimientos_inventario")
+                                  ->insert(["fk_id_det_inventario"=>$id_producto,
+                                            "habia"=>$d[0]->cantidad_existencias_unidades,
+                                            "tipo"=>"AJUSTE",
+                                            "descripcion"=>"unidad",
+                                            "cantidad"=>$valor,
+                                            "quedan"=>$valor,
+                                            "observaciones"=>"Ajuste de unidades en inventario ".$datos->hora_cliente,
+                                            "fk_id_usuario"=>$usuario,
+                                            "updated_at"=>$datos->hora_cliente,
+                                            "created_at"=>$datos->hora_cliente  ]);  
+                        }else{
+                            return response()->json(["respuesta"=>false,"mensaje"=>"Las unidades por caja y blister no pueden ser cero "]);
+                        }
+                             
                         
 
                         break;

@@ -25,13 +25,13 @@ class ImportarController extends Controller
         
         $datos=json_decode($request->get("datos"));
         $ruta=trim($des).$datos->datos->nombre_archivo;
-        //echo $ruta; 
+       
         if(file_exists($ruta)){
-               
+           
             Excel::load($ruta,function($reader)use($datos,$ruta){
-                                                   
+                                                 
                 $arr=$reader->toArray();
-                //var_dump($arr);
+               
                 switch ($datos->datos->tipo_importacion) {
                        case "productos":
                                        
@@ -1082,9 +1082,9 @@ class ImportarController extends Controller
                                            
                                             break;
                                             
+                                                           
                        case "editar_producto":
-
-                                        ini_set('max_execution_time', 60000); //900 seconds = 5 minutes
+                               ini_set('max_execution_time', 60000); //900 seconds = 5 minutes
                                         //linea para impedir error de memoria
                                         ini_set('memory_limit', '-1');
                                         if(count($arr)<500){
@@ -1281,9 +1281,7 @@ class ImportarController extends Controller
 
                                                             $editar=array();
                                                       if(count($editar_dt)>0){
-    //                                                       echo "====";
-    //                                                       var_dump($editar_dt);
-    //                                                       echo "==\n";
+    //                                      
                                                           $pd=DB::table('productos')
                                                             ->where('codigo_distribuidor',"LIKE", $codigo_a_editar_1)
                                                             ->orwhere('codigo_producto', "LIKE",$codigo_a_editar_1)
@@ -1304,13 +1302,13 @@ class ImportarController extends Controller
 
 
                                              if(count($repetidos)>0){
-                                                Excel::create("codigos_repetidos", function($excel) use($repetidos){
-                                                                                                    // use($datos->datos->nombre_reporte)   
-                                                                                                    $excel->sheet('codigos_repetidos',function($sheet) use($repetidos){
+                                                    Excel::create("codigos_repetidos", function($excel) use($repetidos){
+                                                                                                        // use($datos->datos->nombre_reporte)   
+                                                                                                        $excel->sheet('codigos_repetidos',function($sheet) use($repetidos){
 
-                                                                                                            $sheet->fromArray($repetidos);
-                                                                                                    });
-                                                                                                })->store('xls', substr(base_path(),0,-8)."archivos/exportacion/excel");
+                                                                                                                $sheet->fromArray($repetidos);
+                                                                                                        });
+                                                     })->store('xls', substr(base_path(),0,-8)."archivos/exportacion/excel");
                                                  echo json_encode(["respuesta"=>true,"mensaje"=>"productos editados","no_existen"=>"archivos/exportacion/excel/codigos_repetidos.xls"]);
                                              }else{
 
@@ -1320,14 +1318,8 @@ class ImportarController extends Controller
                                         else{
                                             echo json_encode(["respuesta"=>false,"mensaje"=>"El archivo contiene demasiados regustros por favor ingresa maximo 500 productos por archivo"]);
                                         }
-
-                                         
-
-                                         
-                                         
-                                         
-                                        break;                                      
-
+         
+                           break;
                        case "ajustar_inventario_sede":
 
                                         if($datos->datos->sede!="0" && $datos->datos->sede!="--"){
