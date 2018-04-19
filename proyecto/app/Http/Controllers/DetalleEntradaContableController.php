@@ -45,17 +45,20 @@ class DetalleEntradaContableController extends Controller
         //
         $dec=new DetalleEntradaContable();
         $datos=json_decode($request->get("datos"));
-        $e=DB::table("entrada_contables")
+        if($datos->datos->tipo_entrada=="CajaInicial"){
+            $e=DB::table("entrada_contables")
                 ->join("detalle_entrada_contables","detalle_entrada_contables.fk_id_entrada_contable","=","entrada_contables.id")
                 ->where([["detalle_entrada_contables.fecha_entrada","LIKE",explode(" ",$datos->hora_cliente)[0]." %"],
                         ["entrada_contables.nombre_entrada","=","CajaInicial"],
                         ["detalle_entrada_contables.fk_id_sede","=",$datos->datos->fk_id_sede]])    
                 ->get();
         
-        if(count($e)==1){
-            return response()->json(["respuesta"=>false,"mensaje"=>"Ya esta registrada una entrada"]);
+            if(count($e)==1){
+                return response()->json(["respuesta"=>false,"mensaje"=>"Ya esta registrada una entrada"]);
+            }    
         }
-        return response()->json($dec->insertar(array(
+        if($datos->datos->tipo_entrada!=0){
+            return response()->json($dec->insertar(array(
             "fk_id_entrada_contable"=>$datos->datos->fk_id_entrada_contable,
             "fk_id_usuario"=>$datos->datos->fk_id_usuario,
             "fk_id_sede"=>$datos->datos->fk_id_sede,
@@ -63,7 +66,11 @@ class DetalleEntradaContableController extends Controller
             "fecha_entrada"=>$datos->hora_cliente,
             "created_at"=>$datos->hora_cliente,
             "updated_at"=>$datos->hora_cliente, 
-            )));
+            )));    
+        }else{
+            return response()->json(["respuesta"=>false,"mensaje"=>"Debes seleccionar un tipo de entrada"]);
+        }
+        
     }
 
     /**
@@ -76,20 +83,41 @@ class DetalleEntradaContableController extends Controller
     {
         //
         $consulta= explode("&", $id);
-       
-        $fecha2=$consulta[0];
-        $fecha1=explode(" ",$consulta[0])[0]." 00:00:00";
+        $va=explode(" ",$consulta[0]);
+        
+        if($va[0]!=""){
+            $fecha1=explode(" ",$va[0])[0]." 00:00:00";    
+            $fecha2=$consulta[0];
+        }else{
+            $fecha1="";
+            $fecha2="";
+        }
+        
         $dec=new DetalleEntradaContable();
-        $d=DB::table('detalle_entrada_contables')
+        if($fecha1!="" && $fecha2!=""){
+          
+            $d=DB::table('detalle_entrada_contables')
               ->join("entrada_contables","entrada_contables.id","=","detalle_entrada_contables.fk_id_entrada_contable")  
               ->where([
                         ["detalle_entrada_contables.fk_id_sede","=",$consulta[1]],
-                        ["entrada_contables.nombre_entrada","<>","CajaInicial"],
-                        ["entrada_contables.nombre_entrada","<>","VentaDiaria"],
+                        //["entrada_contables.nombre_entrada","<>","CajaInicial"],
+                        //["entrada_contables.nombre_entrada","<>","VentaDiaria"],
                         ["detalle_entrada_contables.fecha_entrada",">=",$fecha1],
                         ["detalle_entrada_contables.fecha_entrada","<=",$fecha2],
                   ])
                 ->get();
+        }else{
+           
+            $d=DB::table('detalle_entrada_contables')
+              ->join("entrada_contables","entrada_contables.id","=","detalle_entrada_contables.fk_id_entrada_contable")  
+              ->where([
+                        ["detalle_entrada_contables.fk_id_sede","=",$consulta[1]],
+                        //["entrada_contables.nombre_entrada","<>","CajaInicial"],
+                        //["entrada_contables.nombre_entrada","<>","VentaDiaria"],
+                        
+                  ])
+                ->get();
+        }    
         if(count($d)>0){
               return response()->json(["mensaje"=>"Entrada consultara","respuesta"=>true,"datos"=>$d]);  
         }

@@ -25,13 +25,13 @@ class ImportarController extends Controller
         
         $datos=json_decode($request->get("datos"));
         $ruta=trim($des).$datos->datos->nombre_archivo;
-       
+        //echo $ruta; 
         if(file_exists($ruta)){
-           
-            Excel::load($ruta,function($reader)use($datos,$ruta){
-                                                 
-                $arr=$reader->toArray();
                
+            Excel::load($ruta,function($reader)use($datos,$ruta){
+                                                   
+                $arr=$reader->toArray();
+                //var_dump($arr);
                 switch ($datos->datos->tipo_importacion) {
                        case "productos":
                                        
@@ -1082,244 +1082,247 @@ class ImportarController extends Controller
                                            
                                             break;
                                             
-                                                           
                        case "editar_producto":
-                               ini_set('max_execution_time', 60000); //900 seconds = 5 minutes
+
+                                        ini_set('max_execution_time', 60000); //900 seconds = 5 minutes
                                         //linea para impedir error de memoria
                                         ini_set('memory_limit', '-1');
-                                        if(count($arr)<500){
-                                            if(count($arr)<100){
-                                                $div_l=ceil(count($arr)/10);
-                                            }else{
-                                                $div_l=ceil(count($arr)/100);
-                                            }
-                                            //echo $div_l;
-                                            $lote_productos_excel = array_chunk($arr, $div_l);
-                                            $editar=[];
-                                            $editar_dt=[];
-                                            $i=0;
-                                            $repetidos=[];
-                                            $lpx=[];
-                                            $iii=0;
-                                            foreach ($lote_productos_excel as $key => $l) {
-                                                //var_dump($l);
-                                                //echo "==========\n";
-                                                foreach ($l as $k => $v) {
-                                                    if(array_key_exists("codigo_coopidrogas",$v) && $v["codigo_coopidrogas"]!==NULL){
+                                        if(count($arr)<100){
+                                            $div_l=ceil(count($arr)/10);
+                                        }else{
+                                            $div_l=ceil(count($arr)/100);
+                                        }
+                                        //echo $div_l;
+                                        $lote_productos_excel = array_chunk($arr, $div_l);
+                                        $editar=[];
+                                        $editar_dt=[];
+                                        $i=0;
+                                        $repetidos=[];
+                                        $lpx=[];
+                                        $iii=0;
+                                        foreach ($lote_productos_excel as $key => $l) {
+                                            //var_dump($l);
+                                            //echo "==========\n";
+                                            foreach ($l as $k => $v) {
+                                                if(array_key_exists("codigo_coopidrogas",$v) && $v["codigo_coopidrogas"]!==NULL){
+                                                    //var_dump($v);
+                                                    //echo "==========\n";
+                                                
+                                                    $d=DB::table("productos")
+                                                        ->where("codigo_producto","LIKE",$v["codigo_coopidrogas"])
+                                                        ->orwhere("codigo_distribuidor","LIKE",$v["codigo_coopidrogas"])
+                                                        ->get();
+                                                    
+                                                    if(count($d)>0){
                                                         //var_dump($v);
-                                                        //echo "==========\n";
+                                                        //echo $v["codigo_coopidrogas"]."==========\n";
+                                                        $lpx[$iii]=$v;
+                                                        $iii++;
+                                                    }
+                                                    
+                                                    
+                                                    
+                                                    
+                                                }
+                                            }
+                                        }
+                                        //echo $iii;
+                                        //echo count($lpx);
+                                        if(count($lpx)<100){
+                                            $lote_para_editar = array_chunk($lpx, ceil(count($lpx)/10)); 
+                                        }else if(count($lpx)<1000){
+                                            $lote_para_editar = array_chunk($lpx, ceil(count($lpx)/100)); 
+                                        }else if(count($lpx)<2000){
+                                            $lote_para_editar = array_chunk($lpx, ceil(count($lpx)/1000)); 
+                                        } else {
+                                             $lote_para_editar = array_chunk($lpx, ceil(count($lpx)/2000)); 
+                                        }
+                                                  
+                                         //var_dump($lote_para_editar);
+                                        foreach ($lote_para_editar as $k => $val) {
+                                            //var_dump($val);
+                                            //echo "==========\n";
+                                           foreach ($val as $key => $value) {
+                                                 $codigo_a_editar_1=$value["codigo_coopidrogas"];
 
-                                                        $d=DB::table("productos")
-                                                            ->where("codigo_producto","LIKE",$v["codigo_coopidrogas"])
-                                                            ->orwhere("codigo_distribuidor","LIKE",$v["codigo_coopidrogas"])
-                                                            ->get();
+                                                        if(array_key_exists("nuevo_codigo_distribuidor",$value) && $value["nuevo_codigo_distribuidor"]!==NULL){
+                                                                  $editar["codigo_distribuidor"]=$value["nuevo_codigo_distribuidor"]; 
+                                                        }    
 
-                                                        if(count($d)>0){
-                                                            //var_dump($v);
-                                                            //echo $v["codigo_coopidrogas"]."==========\n";
-                                                            $lpx[$iii]=$v;
-                                                            $iii++;
+                                                        if(array_key_exists("nuevo_codigo_venta",$value) && $value["nuevo_codigo_venta"]!==NULL){
+                                                                  $editar["codigo_producto"]=$value["nuevo_codigo_venta"]; 
+                                                        }   
+
+
+
+                                                        if(array_key_exists("nombre_producto",$value) && $value["nombre_producto"]!==NULL){
+                                                                   $editar["nombre_producto"]=$value["nombre_producto"]; 
+                                                        }
+
+                                                        if(array_key_exists("descripcion_producto",$value) && $value["descripcion_producto"]!==NULL){
+                                                               $editar["nombre_producto"]=$value["descripcion_producto"]; 
+                                                               $editar["nombre_producto_venta"]=$value["descripcion_producto"];
                                                         }
 
 
+                                                        if(array_key_exists("laboratorio",$value) && $value["laboratorio"]!=NULL){
+                                                               $editar["laboratorio"]=$value["laboratorio"]; 
+                                                        }
 
 
-                                                    }
-                                                }
+                                                        if(array_key_exists("tipo_venta",$value) && $value["tipo_venta"]!==NULL){
+                                                               $editar["tipo_venta_producto"]=$value["tipo_venta"]; 
+                                                        }
+
+
+                                                        if(array_key_exists("numero_de_unidades_presentacion",$value) && $value["numero_de_unidades_presentacion"]!==NULL){
+
+                                                               $editar["unidades_por_caja"]=$value["numero_de_unidades_presentacion"]; 
+
+
+
+                                                        }
+
+
+                                                        if(array_key_exists("unidades_por_blister",$value) && $value["unidades_por_blister"]!==NULL){
+
+                                                               $editar["unidades_por_blister"]=$value["unidades_por_blister"];
+                                                        }
+
+
+                                                        if(array_key_exists("tipo_presentacion",$value) && $value["tipo_presentacion"]!==NULL){
+                                                               $editar["tipo_presentacion"]=$value["tipo_presentacion"]; 
+                                                        }
+
+
+                                                        if(array_key_exists("precio_costo",$value) && $value["precio_costo"]!==NULL && $value["precio_costo"]!=="0"){
+                                                               //var_dump($value["precio_costo"]);
+                                                               $editar["precio_compra"]=$value["precio_costo"]; 
+                                                        }
+                                                        //var_dump($value["precio_costo_blister"]);
+                                                        if(array_key_exists("precio_costo_blister",$value) && $value["precio_costo_blister"]!==NULL && $value["precio_costo_blister"]!=="#DIV/0!"){
+
+                                                               $editar["precio_compra_blister"]=$value["precio_costo_blister"]; 
+                                                        }
+
+
+                                                        if(array_key_exists("precio_costo_unidad_blister",$value) && $value["precio_costo_unidad_blister"]!==NULL && $value["precio_costo_unidad_blister"]!=="#DIV/0!"){
+                                                               $editar["precio_compra_unidad"]=$value["precio_costo_unidad_blister"]; 
+                                                        }
+
+
+                                                        if(array_key_exists("precio_venta",$value) && $value["precio_venta"]!==NULL && $value["precio_venta"]!=="#DIV/0!"){
+                                                               $editar["precio_venta"]=$value["precio_venta"]; 
+                                                               $editar_dt["precio_venta_sede"]=$value["precio_venta"]; 
+                                                        }
+
+
+                                                        if(array_key_exists("precio_venta_blister",$value) && $value["precio_venta_blister"]!==NULL && $value["precio_venta_blister"]!=="#DIV/0!"){
+                                                               $editar["precio_venta_blister"]=$value["precio_venta_blister"]; 
+                                                               $editar_dt["precio_venta_blister_sede"]=$value["precio_venta_blister"]; 
+                                                        }
+
+
+                                                        if(array_key_exists("precio_venta_unidad_blister",$value) && $value["precio_venta_unidad_blister"]!==NULL && $value["precio_venta_unidad_blister"]!=="#DIV/0!"){
+                                                               $editar["precio_mayoreo"]=$value["precio_venta_unidad_blister"]; 
+                                                               $editar_dt["precio_mayoreo_sede"]=$value["precio_venta_unidad_blister"]; 
+                                                        }
+
+
+                                                        if(array_key_exists("porcentaje_ganancia",$value) && $value["porcentaje_ganancia"]!==NULL  && $value["porcentaje_ganancia"]!=="0"){
+                                                               $editar["porcentaje_ganancia"]=$value["porcentaje_ganancia"]; 
+                                                               $editar_dt["porcentaje_ganancia"]=$value["porcentaje_ganancia"]; 
+                                                        }
+
+
+                                                        if(array_key_exists("porcentaje_ganancia_blister",$value) && $value["porcentaje_ganancia_blister"]!==NULL  && $value["porcentaje_ganancia_blister"]!=="0"){
+                                                               $editar["porcentaje_ganancia_blister"]=$value["porcentaje_ganancia_blister"]; 
+                                                               $editar_dt["porcentaje_ganancia_blister_sede"]=$value["porcentaje_ganancia_blister"]; 
+                                                        }
+
+
+                                                        if(array_key_exists("porcentaje_ganancia_unidad_blister",$value) && $value["porcentaje_ganancia_unidad_blister"]!==NULL  && $value["porcentaje_ganancia_unidad_blister"]!=="0"){
+                                                               $editar["porcentaje_ganancia_unidad"]=$value["porcentaje_ganancia_unidad_blister"]; 
+                                                               $editar_dt["porcentaje_ganancia_sede_unidad"]=$value["porcentaje_ganancia"]; 
+                                                        }
+
+
+                                                        if(array_key_exists("minimo_inventario",$value) && $value["minimo_inventario"]!==NULL){
+                                                               $editar["minimo_inventario"]=$value["minimo_inventario"]; 
+                                                               $editar_dt["minimo_inventario_sede"]=$value["minimo_inventario"]; 
+                                                        }
+
+
+                                                        if(array_key_exists("maximo_inventario",$value) && $value["maximo_inventario"]!==NULL){
+                                                               $editar["maximo_inventario"]=$value["maximo_inventario"]; 
+                                                        }
+
+
+                                                        if(array_key_exists("grupo",$value) && $value["grupo"]!==NULL){
+                                                               $editar["grupo"]=$value["grupo"]; 
+                                                        }
+
+
+                                                        if(array_key_exists("sub_grupo",$value) && $value["sub_grupo"]!==NULL){
+                                                               $editar["sub_grupo"]=$value["sub_grupo"]; 
+                                                        }
+
+
+                                                        if(array_key_exists("impuesto",$value) && $value["impuesto"]!==NULL){
+                                                               $editar["impuesto"]=$value["impuesto"]; 
+                                                        }
+                                                        //var_dump($editar);
+                                                        //echo "==\n";
+                                                        DB::table('productos')
+                                                        ->where('codigo_distribuidor',"LIKE", $codigo_a_editar_1)
+                                                        ->orwhere('codigo_producto', "LIKE",$codigo_a_editar_1)
+                                                        ->update($editar);          
+
+                                                        $editar=array();
+                                                  if(count($editar_dt)>0){
+//                                                       echo "====";
+//                                                       var_dump($editar_dt);
+//                                                       echo "==\n";
+                                                      $pd=DB::table('productos')
+                                                        ->where('codigo_distribuidor',"LIKE", $codigo_a_editar_1)
+                                                        ->orwhere('codigo_producto', "LIKE",$codigo_a_editar_1)
+                                                        ->get();
+                                                      
+                                                      DB::table('detalle_inventarios')
+                                                        ->where('fk_id_producto',"=", $pd[0]->id)                                                                    
+                                                        ->update($editar_dt);   
+                                                       $editar_dt=array();
+                                                  }  
+                                                  $i++;  
+
                                             }
-                                            //echo $iii;
-                                            //echo count($lpx);
-                                            if(count($lpx)<100){
-                                                $lote_para_editar = array_chunk($lpx, ceil(count($lpx)/10)); 
-                                            }else if(count($lpx)<1000){
-                                                $lote_para_editar = array_chunk($lpx, ceil(count($lpx)/100)); 
-                                            }else if(count($lpx)<2000){
-                                                $lote_para_editar = array_chunk($lpx, ceil(count($lpx)/1000)); 
-                                            } else {
-                                                 $lote_para_editar = array_chunk($lpx, ceil(count($lpx)/2000)); 
-                                            }
-
-                                             //var_dump($lote_para_editar);
-                                            foreach ($lote_para_editar as $k => $val) {
-                                                //var_dump($val);
-                                                //echo "==========\n";
-                                               foreach ($val as $key => $value) {
-                                                     $codigo_a_editar_1=$value["codigo_coopidrogas"];
-
-                                                            if(array_key_exists("nuevo_codigo_distribuidor",$value) && $value["nuevo_codigo_distribuidor"]!==NULL){
-                                                                      $editar["codigo_distribuidor"]=$value["nuevo_codigo_distribuidor"]; 
-                                                            }    
-
-                                                            if(array_key_exists("nuevo_codigo_venta",$value) && $value["nuevo_codigo_venta"]!==NULL){
-                                                                      $editar["codigo_producto"]=$value["nuevo_codigo_venta"]; 
-                                                            }   
-
-
-
-                                                            if(array_key_exists("nombre_producto",$value) && $value["nombre_producto"]!==NULL){
-                                                                       $editar["nombre_producto"]=$value["nombre_producto"]; 
-                                                            }
-
-                                                            if(array_key_exists("descripcion_producto",$value) && $value["descripcion_producto"]!==NULL){
-                                                                   $editar["nombre_producto"]=$value["descripcion_producto"]; 
-                                                                   $editar["nombre_producto_venta"]=$value["descripcion_producto"];
-                                                            }
-
-
-                                                            if(array_key_exists("laboratorio",$value) && $value["laboratorio"]!=NULL){
-                                                                   $editar["laboratorio"]=$value["laboratorio"]; 
-                                                            }
-
-
-                                                            if(array_key_exists("tipo_venta",$value) && $value["tipo_venta"]!==NULL){
-                                                                   $editar["tipo_venta_producto"]=$value["tipo_venta"]; 
-                                                            }
-
-
-                                                            if(array_key_exists("numero_de_unidades_presentacion",$value) && $value["numero_de_unidades_presentacion"]!==NULL){
-
-                                                                   $editar["unidades_por_caja"]=$value["numero_de_unidades_presentacion"]; 
-
-
-
-                                                            }
-
-
-                                                            if(array_key_exists("unidades_por_blister",$value) && $value["unidades_por_blister"]!==NULL){
-
-                                                                   $editar["unidades_por_blister"]=$value["unidades_por_blister"];
-                                                            }
-
-
-                                                            if(array_key_exists("tipo_presentacion",$value) && $value["tipo_presentacion"]!==NULL){
-                                                                   $editar["tipo_presentacion"]=$value["tipo_presentacion"]; 
-                                                            }
-
-
-                                                            if(array_key_exists("precio_costo",$value) && $value["precio_costo"]!==NULL && $value["precio_costo"]!=="0"){
-                                                                   //var_dump($value["precio_costo"]);
-                                                                   $editar["precio_compra"]=$value["precio_costo"]; 
-                                                            }
-                                                            //var_dump($value["precio_costo_blister"]);
-                                                            if(array_key_exists("precio_costo_blister",$value) && $value["precio_costo_blister"]!==NULL && $value["precio_costo_blister"]!=="#DIV/0!"){
-
-                                                                   $editar["precio_compra_blister"]=$value["precio_costo_blister"]; 
-                                                            }
-
-
-                                                            if(array_key_exists("precio_costo_unidad_blister",$value) && $value["precio_costo_unidad_blister"]!==NULL && $value["precio_costo_unidad_blister"]!=="#DIV/0!"){
-                                                                   $editar["precio_compra_unidad"]=$value["precio_costo_unidad_blister"]; 
-                                                            }
-
-
-                                                            if(array_key_exists("precio_venta",$value) && $value["precio_venta"]!==NULL && $value["precio_venta"]!=="#DIV/0!"){
-                                                                   $editar["precio_venta"]=$value["precio_venta"]; 
-                                                                   $editar_dt["precio_venta_sede"]=$value["precio_venta"]; 
-                                                            }
-
-
-                                                            if(array_key_exists("precio_venta_blister",$value) && $value["precio_venta_blister"]!==NULL && $value["precio_venta_blister"]!=="#DIV/0!"){
-                                                                   $editar["precio_venta_blister"]=$value["precio_venta_blister"]; 
-                                                                   $editar_dt["precio_venta_blister_sede"]=$value["precio_venta_blister"]; 
-                                                            }
-
-
-                                                            if(array_key_exists("precio_venta_unidad_blister",$value) && $value["precio_venta_unidad_blister"]!==NULL && $value["precio_venta_unidad_blister"]!=="#DIV/0!"){
-                                                                   $editar["precio_mayoreo"]=$value["precio_venta_unidad_blister"]; 
-                                                                   $editar_dt["precio_mayoreo_sede"]=$value["precio_venta_unidad_blister"]; 
-                                                            }
-
-
-                                                            if(array_key_exists("porcentaje_ganancia",$value) && $value["porcentaje_ganancia"]!==NULL  && $value["porcentaje_ganancia"]!=="0"){
-                                                                   $editar["porcentaje_ganancia"]=$value["porcentaje_ganancia"]; 
-                                                                   $editar_dt["porcentaje_ganancia"]=$value["porcentaje_ganancia"]; 
-                                                            }
-
-
-                                                            if(array_key_exists("porcentaje_ganancia_blister",$value) && $value["porcentaje_ganancia_blister"]!==NULL  && $value["porcentaje_ganancia_blister"]!=="0"){
-                                                                   $editar["porcentaje_ganancia_blister"]=$value["porcentaje_ganancia_blister"]; 
-                                                                   $editar_dt["porcentaje_ganancia_blister_sede"]=$value["porcentaje_ganancia_blister"]; 
-                                                            }
-
-
-                                                            if(array_key_exists("porcentaje_ganancia_unidad_blister",$value) && $value["porcentaje_ganancia_unidad_blister"]!==NULL  && $value["porcentaje_ganancia_unidad_blister"]!=="0"){
-                                                                   $editar["porcentaje_ganancia_unidad"]=$value["porcentaje_ganancia_unidad_blister"]; 
-                                                                   $editar_dt["porcentaje_ganancia_sede_unidad"]=$value["porcentaje_ganancia"]; 
-                                                            }
-
-
-                                                            if(array_key_exists("minimo_inventario",$value) && $value["minimo_inventario"]!==NULL){
-                                                                   $editar["minimo_inventario"]=$value["minimo_inventario"]; 
-                                                                   $editar_dt["minimo_inventario_sede"]=$value["minimo_inventario"]; 
-                                                            }
-
-
-                                                            if(array_key_exists("maximo_inventario",$value) && $value["maximo_inventario"]!==NULL){
-                                                                   $editar["maximo_inventario"]=$value["maximo_inventario"]; 
-                                                            }
-
-
-                                                            if(array_key_exists("grupo",$value) && $value["grupo"]!==NULL){
-                                                                   $editar["grupo"]=$value["grupo"]; 
-                                                            }
-
-
-                                                            if(array_key_exists("sub_grupo",$value) && $value["sub_grupo"]!==NULL){
-                                                                   $editar["sub_grupo"]=$value["sub_grupo"]; 
-                                                            }
-
-
-                                                            if(array_key_exists("impuesto",$value) && $value["impuesto"]!==NULL){
-                                                                   $editar["impuesto"]=$value["impuesto"]; 
-                                                            }
-                                                            //var_dump($editar);
-                                                            //echo "==\n";
-                                                            DB::table('productos')
-                                                            ->where('codigo_distribuidor',"LIKE", $codigo_a_editar_1)
-                                                            ->orwhere('codigo_producto', "LIKE",$codigo_a_editar_1)
-                                                            ->update($editar);          
-
-                                                            $editar=array();
-                                                      if(count($editar_dt)>0){
-    //                                      
-                                                          $pd=DB::table('productos')
-                                                            ->where('codigo_distribuidor',"LIKE", $codigo_a_editar_1)
-                                                            ->orwhere('codigo_producto', "LIKE",$codigo_a_editar_1)
-                                                            ->get();
-
-                                                          DB::table('detalle_inventarios')
-                                                            ->where('fk_id_producto',"=", $pd[0]->id)                                                                    
-                                                            ->update($editar_dt);   
-                                                           $editar_dt=array();
-                                                      }  
-                                                      $i++;  
-
-                                                }
-                                            }
-
-
-
-
-
-                                             if(count($repetidos)>0){
-                                                    Excel::create("codigos_repetidos", function($excel) use($repetidos){
-                                                                                                        // use($datos->datos->nombre_reporte)   
-                                                                                                        $excel->sheet('codigos_repetidos',function($sheet) use($repetidos){
-
-                                                                                                                $sheet->fromArray($repetidos);
-                                                                                                        });
-                                                     })->store('xls', substr(base_path(),0,-8)."archivos/exportacion/excel");
-                                                 echo json_encode(["respuesta"=>true,"mensaje"=>"productos editados","no_existen"=>"archivos/exportacion/excel/codigos_repetidos.xls"]);
-                                             }else{
-
-                                                 echo json_encode(["respuesta"=>true,"mensaje"=>"productos editados"]);
-                                             }
                                         }
-                                        else{
-                                            echo json_encode(["respuesta"=>false,"mensaje"=>"El archivo contiene demasiados regustros por favor ingresa maximo 500 productos por archivo"]);
-                                        }
-         
-                           break;
+
+                                                  
+
+                                        
+
+                                         if(count($repetidos)>0){
+                                            Excel::create("codigos_repetidos", function($excel) use($repetidos){
+                                                                                                // use($datos->datos->nombre_reporte)   
+                                                                                                $excel->sheet('codigos_repetidos',function($sheet) use($repetidos){
+                                                                                                       
+                                                                                                        $sheet->fromArray($repetidos);
+                                                                                                });
+                                                                                            })->store('xls', substr(base_path(),0,-8)."archivos/exportacion/excel");
+                                             echo json_encode(["respuesta"=>true,"mensaje"=>"productos editados","no_existen"=>"archivos/exportacion/excel/codigos_repetidos.xls"]);
+                                         }else{
+                                             
+                                             echo json_encode(["respuesta"=>true,"mensaje"=>"productos editados"]);
+                                         }
+
+                                         
+
+                                         
+                                         
+                                         
+                                        break;                                      
+
                        case "ajustar_inventario_sede":
 
                                         if($datos->datos->sede!="0" && $datos->datos->sede!="--"){

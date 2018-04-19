@@ -720,8 +720,8 @@ class Reportes {
                                       ->join('sedes','detalle_entrada_contables.fk_id_sede','=','sedes.id')
                                       ->where($datos->datos->filtro)
                                       ->where([
-                                                ["entrada_contables.nombre_entrada","<>","VentaDiaria"],
-                                                ["entrada_contables.nombre_entrada","<>","CajaInicial"]
+                                                ["entrada_contables.nombre_entrada","=","EntradaEfectivo"]
+                                                
                                           ])
                                       
                                       ->select(DB::raw("SUM(valor_entrada) AS total_entradas_corte"))
@@ -770,6 +770,39 @@ class Reportes {
                                             ])
                                    ->select(DB::raw('SUM(detalle_credito_abonos.abono) AS total_abonos'))
                                    ->get();
+                $prestamos=DB::table('salida_contables')
+                                    ->join('detalle_salida_contables','detalle_salida_contables.fk_id_salida_contable','=','salida_contables.id')
+                                    ->where([
+                                            
+                                            ["detalle_salida_contables.fecha_registro_salida",'>=',
+                                                $datos->datos->fecha."  00:00:00"],
+                                            ['detalle_salida_contables.fecha_registro_salida','<=',$datos->datos->fecha." 23:59:59"]   
+                                            ])
+                                           ->where("salida_contables.nombre_salida","=","prestamo") 
+                                    ->select(DB::raw('SUM(detalle_salida_contables.valor_salida) AS total_salida_prestamo'))
+                                    ->get();
+                $pago_facturas_salidas=DB::table('salida_contables')
+                                    ->join('detalle_salida_contables','detalle_salida_contables.fk_id_salida_contable','=','salida_contables.id')
+                                    ->where([
+                                            
+                                            ["detalle_salida_contables.fecha_registro_salida",'>=',
+                                                $datos->datos->fecha."  00:00:00"],
+                                            ['detalle_salida_contables.fecha_registro_salida','<=',$datos->datos->fecha." 23:59:59"]   
+                                            ])
+                                           ->where("salida_contables.nombre_salida","=","pago factura") 
+                                    ->select(DB::raw('SUM(detalle_salida_contables.valor_salida) AS total_salida_pago_facturas'))
+                                    ->get();                    
+                 $pago_otros_salidas=DB::table('salida_contables')
+                                    ->join('detalle_salida_contables','detalle_salida_contables.fk_id_salida_contable','=','salida_contables.id')
+                                    ->where([
+                                            
+                                            ["detalle_salida_contables.fecha_registro_salida",'>=',
+                                                $datos->datos->fecha."  00:00:00"],
+                                            ['detalle_salida_contables.fecha_registro_salida','<=',$datos->datos->fecha." 23:59:59"]   
+                                            ])
+                                           ->where("salida_contables.nombre_salida","=","otros") 
+                                    ->select(DB::raw('SUM(detalle_salida_contables.valor_salida) AS total_salida_pago_otros'))
+                                    ->get();                    
                 $salidas_dinero_caja=DB::table('salida_contables')
                                     ->join('detalle_salida_contables','detalle_salida_contables.fk_id_salida_contable','=','salida_contables.id')
                                     ->where([
@@ -828,7 +861,10 @@ class Reportes {
                                                     "pago_de_clientes"=>$pago_de_clientes,
                                                     "salidas_dinero_caja"=>$salidas_dinero_caja,
                                                      "dinero_caja_inicial"=>$dinero_inicial_caja,
-                                                    "ganancias_venta_dia"=>$ganancias_venta_dia];
+                                                    "ganancias_venta_dia"=>$ganancias_venta_dia,
+                                                    "prestamos"=>$prestamos,
+                                                    "salida_facturas"=>$pago_facturas_salidas,
+                                                    "salida_otros"=>$pago_otros_salidas];
     			break;
     		case "SEDE":
                     
@@ -844,8 +880,8 @@ class Reportes {
                                       ->join('sedes','detalle_entrada_contables.fk_id_sede','=','sedes.id')
                                       ->where($datos->datos->filtro)
                                       ->where([
-                                                ["entrada_contables.nombre_entrada","<>","VentaDiaria"],
-                                                ["entrada_contables.nombre_entrada","<>","CajaInicial"]
+                                                ["entrada_contables.nombre_entrada","=","EntradaEfectivo"],
+                                                //["entrada_contables.nombre_entrada","=","VentaDiaria"]
                                           ])
                                       ->where("sedes.id","=",$datos->datos->sede)
                                       ->select(DB::raw("SUM(valor_entrada) AS total_entradas_corte"))
@@ -902,7 +938,7 @@ class Reportes {
                                    ->where([    
                                                 ['estado_credito','=','pendiente'],
                                                 ['detalle_credito_abonos.fecha_abono','>=',$datos->datos->fecha."  00:00:00"],
-                                                ['detalle_credito_abonos.fecha_abono','<=',$datos->datos->fecha],
+                                                ['detalle_credito_abonos.fecha_abono','<=',$datos->datos->fecha." 23:59:59"],
                                                 ["detalle_credito_abonos.fk_id_sede","=",$datos->datos->sede]
                                             ])
                                    ->select(DB::raw('SUM(detalle_credito_abonos.abono) AS total_abonos'))
@@ -914,11 +950,46 @@ class Reportes {
                                             ["detalle_salida_contables.fk_id_sede","=",$datos->datos->sede],
                                             ["detalle_salida_contables.fecha_registro_salida",'>=',
                                                 $datos->datos->fecha."  00:00:00"],
-                                            ['detalle_salida_contables.fecha_registro_salida','<=',$datos->hora_cliente]   
+                                            ['detalle_salida_contables.fecha_registro_salida','<=',$datos->datos->fecha." 23:59:59"]   
                                             ])
                                            ->where("salida_contables.nombre_salida","=","pago a proveedor") 
                                     ->select(DB::raw('SUM(detalle_salida_contables.valor_salida) AS total_salida'))
-                                    ->get();                        
+                                    ->get(); 
+                $prestamos=DB::table('salida_contables')
+                                    ->join('detalle_salida_contables','detalle_salida_contables.fk_id_salida_contable','=','salida_contables.id')
+                                    ->where([
+                                            ["detalle_salida_contables.fk_id_sede","=",$datos->datos->sede],
+                                            ["detalle_salida_contables.fecha_registro_salida",'>=',
+                                                $datos->datos->fecha."  00:00:00"],
+                                            ['detalle_salida_contables.fecha_registro_salida','<=',$datos->datos->fecha." 23:59:59"]   
+                                            ])
+                                           ->where("salida_contables.nombre_salida","=","prestamo") 
+                                    ->select(DB::raw('SUM(detalle_salida_contables.valor_salida) AS total_salida_prestamo'))
+                                    ->get(); 
+
+                $pago_facturas_salidas=DB::table('salida_contables')
+                                    ->join('detalle_salida_contables','detalle_salida_contables.fk_id_salida_contable','=','salida_contables.id')
+                                    ->where([
+                                            ["detalle_salida_contables.fk_id_sede","=",$datos->datos->sede],
+                                            ["detalle_salida_contables.fecha_registro_salida",'>=',
+                                                $datos->datos->fecha."  00:00:00"],
+                                            ['detalle_salida_contables.fecha_registro_salida','<=',$datos->datos->fecha." 23:59:59"]   
+                                            ])
+                                           ->where("salida_contables.nombre_salida","=","pago factura") 
+                                    ->select(DB::raw('SUM(detalle_salida_contables.valor_salida) AS total_salida_pago_facturas'))
+                                    ->get();                    
+                 $pago_otros_salidas=DB::table('salida_contables')
+                                    ->join('detalle_salida_contables','detalle_salida_contables.fk_id_salida_contable','=','salida_contables.id')
+                                    ->where([
+                                            ["detalle_salida_contables.fk_id_sede","=",$datos->datos->sede],
+                                            ["detalle_salida_contables.fecha_registro_salida",'>=',
+                                                $datos->datos->fecha."  00:00:00"],
+                                            ['detalle_salida_contables.fecha_registro_salida','<=',$datos->datos->fecha." 23:59:59"]   
+                                            ])
+                                           ->where("salida_contables.nombre_salida","=","otros") 
+                                    ->select(DB::raw('SUM(detalle_salida_contables.valor_salida) AS total_salida_pago_otros'))
+                                    ->get();                                                                                 
+
                 $dinero_inicial_caja=DB::table("entrada_contables")
                                         ->join("detalle_entrada_contables","detalle_entrada_contables.fk_id_entrada_contable","=","entrada_contables.id")
                                         ->join("sedes","sedes.id","=","detalle_entrada_contables.fk_id_sede")
@@ -937,7 +1008,7 @@ class Reportes {
                                         ->where([
                                                 ["facturas.fk_id_sede","=",$datos->datos->sede],
                                                 ['estado_factura','=','paga'],
-                                                ['registro_factura','>=',$datos->datos->fecha."  00:00:00"],
+                                                ['registro_factura','>=',$datos->datos->fecha." 00:00:00"],
                                                 ['registro_factura','<=',$datos->datos->fecha." 23:59:59" ]
                                             ])
                                         
@@ -970,9 +1041,12 @@ class Reportes {
                                                     "ventas_por_departamento"=>$ventas_por_departamento,
                                                     "pago_de_clientes"=>$pago_de_clientes,
                                                     "salidas_dinero_caja"=>$salidas_dinero_caja,
-                                                     "dinero_caja_inicial"=>$dinero_inicial_caja,
-                                                     "creditos"=>$credito_facturas,
-                                                        "ganancias_venta_dia"=>$ganancias_venta_dia];
+                                                    "dinero_caja_inicial"=>$dinero_inicial_caja,
+                                                    "creditos"=>$credito_facturas,
+                                                    "ganancias_venta_dia"=>$ganancias_venta_dia,
+                                                    "prestamos"=>$prestamos, 
+                                                    "salida_facturas"=>$pago_facturas_salidas,
+                                                    "salida_otros"=>$pago_otros_salidas];
     		    break;	
     		 default:
     		 	return ["mensaje"=>"Por favor selecciona un tipo de reporte ","respuesta"=>true,"datos"=>$reporte];

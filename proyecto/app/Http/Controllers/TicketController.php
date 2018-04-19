@@ -55,7 +55,6 @@ class TicketController extends Controller
     public function show($id)
     {
         //
-
         
     }
 
@@ -68,7 +67,6 @@ class TicketController extends Controller
     public function edit($id)
     {
         //
-
     }
 
     /**
@@ -81,12 +79,6 @@ class TicketController extends Controller
     public function update(Request $request, $id)
     {
         //
-        $datos=json_decode($request->get("datos"));
-        DB::table()
-            ->join()
-            ->where()
-            ->get();
-        return response()->json(["mensaje"=>"ok"]);   
     }
 
     /**

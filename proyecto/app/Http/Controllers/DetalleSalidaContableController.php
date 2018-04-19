@@ -8,7 +8,9 @@ use App\Http\Requests;
 
 use App\DetalleSalidaContable;
 
-class DetalleSalidaContableController extends Controller
+use DB;
+
+class   DetalleSalidaContableController extends Controller
 {
     /**
      * Display a listing of the resource.
@@ -41,8 +43,11 @@ class DetalleSalidaContableController extends Controller
     public function store(Request $request)
     {
         //
-        $dsc=new DetalleSalidaContable();
         $datos=json_decode($request->get("datos"));
+        //var_dump($datos->datos->motivo);///
+
+        $dsc=new DetalleSalidaContable();
+        
         return response()->json($dsc->insertar(
                     array(
                         "fk_id_salida_contable"=>$datos->datos->fk_id_salida_contable,
@@ -50,6 +55,7 @@ class DetalleSalidaContableController extends Controller
                         "fk_id_sede"=>$datos->datos->fk_id_sede,
                         "valor_salida"=>$datos->datos->valor_salida,
                         "fecha_registro_salida"=>$datos->hora_cliente,
+                        "motivo"=>$datos->datos->motivo,
                         "created_at"=>$datos->hora_cliente,
                         "updated_at"=>$datos->hora_cliente, 
                         )
@@ -65,8 +71,50 @@ class DetalleSalidaContableController extends Controller
     public function show($id)
     {
         //
-        $dsc=new DetalleSalidaContable();
-        return response()->json($dsc->consultar_por_campo(array(array("id","=",$id)),"AND",array()));
+        //var_dump($id);
+        
+        $consulta= explode("&", $id);
+        $va=explode(" ",$consulta[0]);
+        
+        if($va[0]!=""){
+            $fecha1=explode(" ",$va[0])[0]." 00:00:00";    
+            $fecha2=$consulta[0];
+        }else{
+            $fecha1="";
+            $fecha2="";
+        }
+        
+        $dec=new DetalleSalidaContable();
+
+            //var_dump($fecha1);
+            //var_dump($fecha2);
+            if($fecha1!="" && $fecha2!=""){
+             $d=DB::table('detalle_salida_contables')
+              ->join("salida_contables","salida_contables.id","=","detalle_salida_contables.fk_id_salida_contable")  
+              ->where([
+                        ["detalle_salida_contables.fk_id_sede","=",$consulta[1]],
+                        //["entrada_contables.nombre_entrada","<>","CajaInicial"],
+                        //["entrada_contables.nombre_entrada","<>","VentaDiaria"],
+                        ["detalle_salida_contables.fecha_registro_salida",">=",$fecha1],
+                        ["detalle_salida_contables.fecha_registro_salida","<=",$fecha2],
+                  ])
+                ->get();
+            }else{
+                $d=DB::table('detalle_salida_contables')
+                  ->join("salida_contables","salida_contables.id","=","detalle_salida_contables.fk_id_salida_contable")  
+                  ->where([
+                            ["detalle_salida_contables.fk_id_sede","=",$consulta[1]],
+                            //["entrada_contables.nombre_entrada","<>","CajaInicial"],
+                            //["entrada_contables.nombre_entrada","<>","VentaDiaria"],
+                           
+                      ])
+                    ->get();
+            }
+        if(count($d)>0){
+              return response()->json(["mensaje"=>"Salida consultara","respuesta"=>true,"datos"=>$d]);  
+        }
+        return response()->json(["mensaje"=>"Salidas NO encontradas","respuesta"=>false]);
+        
     }
 
     /**

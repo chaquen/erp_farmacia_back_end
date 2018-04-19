@@ -911,7 +911,7 @@ class ProductosController extends Controller
                         }else{
                             $es="agotado";
                         }
-                        if($d[0]->unidades_por_blister>= 1 && $d[0]->unidades_por_caja >= 1 ){
+                        if($d[0]->unidades_por_blister != 0 && $d[0]->unidades_por_caja != 0){
                             DB::table($nom_tabla)
                             ->where("id","=",$id_producto)
                              ->update([ 
@@ -921,8 +921,8 @@ class ProductosController extends Controller
 
 
                             DB::table("movimientos_inventario")
-                                  ->insert(["fk_id_det_inventario"=>$id_producto,
-                                            "habia"=>$d[0]->cantidad_existencias_unidades,
+                                      ->insert(["fk_id_det_inventario"=>$id_producto,
+                                                "habia"=>$d[0]->cantidad_existencias_unidades,
                                             "tipo"=>"AJUSTE",
                                             "descripcion"=>"unidad",
                                             "cantidad"=>$valor,
@@ -930,11 +930,11 @@ class ProductosController extends Controller
                                             "observaciones"=>"Ajuste de unidades en inventario ".$datos->hora_cliente,
                                             "fk_id_usuario"=>$usuario,
                                             "updated_at"=>$datos->hora_cliente,
-                                            "created_at"=>$datos->hora_cliente  ]);  
+                                            "created_at"=>$datos->hora_cliente  ]);    
                         }else{
-                            return response()->json(["respuesta"=>false,"mensaje"=>"Las unidades por caja y blister no pueden ser cero "]);
+                            return response()->json(["respuesta"=>false,"mensaje"=>"Las unidades de caja y blister deben ser mayor a cero"]);
                         }
-                             
+                           
                         
 
                         break;
