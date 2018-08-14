@@ -1,1 +1,0 @@
-SELECT * FROM `productos` WHERE codigo_producto = '101-a' or codigo_producto = '105-a' or codigo_producto = '115-a' or codigo_producto = '116-a' or codigo_producto = '125-a' or codigo_producto = '126-a' or codigo_producto = '127-a' or codigo_producto = '128-a' or codigo_producto = '129-a' or codigo_producto = '130-a' or codigo_producto = '22-a'

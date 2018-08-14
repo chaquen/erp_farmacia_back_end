@@ -10,7 +10,6 @@
 
 	<tr>
 		<td>ID FARMACIA</td>
-		<td>COD. FARMACIA</td>
 		<td>CODIGO PRODUCTO VENTA</td>
 		<td>CODIGO DISTRIBUIDOR</td>
 		<td>NOMBRE PRODUCTO</td>
@@ -18,20 +17,21 @@
 		<td>PRECIO VENTA</td>
 		<td>PRECO VENTA SEDE</td>
 		<td>TIPO PRESENTACION</td>
+		<td>EXISTENCIAS</td>
 		<td>EXISTENCIAS UNIDADES</td>
 		<td> MINIMO INVETARIO</td>
 	</tr>
 	@foreach($datos_pedido["reporte"]["datos"] as $d)
 	<tr>
 	 	<td>{{$d["id"]}}</td>
-	 	<td>{{$d["codigo_sede"]}}</td>
 	 	<td>{{$d["codigo_producto"]}}</td>
 	 	<td>{{$d["codigo_distribuidor"]}}</td>
 	 	<td>{{$d["nombre_producto"]}}</td>
 	 	<td>{{$d["precio_compra"]}}</td>
 	 	<td>{{$d["precio_venta"]}}</td>
 	 	<td>{{$d["precio_mayoreo"]}}</td>
-	 	<td>{{$d["tipo_presentacion"]}}</td>	 	
+	 	<td>{{$d["tipo_presentacion"]}}</td>
+	 	<td>{{$d["cantidad_existencias"]}}</td>
 	 	<td>{{$d["cantidad_existencias_unidades"]}}</td>
 	 	<td>{{$d["minimo_inventario"]}}</td>
 	 </tr>

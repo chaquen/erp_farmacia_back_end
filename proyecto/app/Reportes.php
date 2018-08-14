@@ -201,6 +201,7 @@ class Reportes {
                                
                      }
                      //echo count($arr_where);
+                     //var_dump($arr_where);
                     
                     if(count($arr_where)>0 && count($arr_where_2)>0){
                           
@@ -997,8 +998,10 @@ class Reportes {
                                         ->where("entrada_contables.nombre_entrada","=","CajaInicial")
                                         ->where("detalle_entrada_contables.fk_id_sede","=",$datos->datos->sede)
                                         ->groupby("detalle_entrada_contables.fk_id_entrada_contable")
-                                        ->select(DB::raw("SUM(detalle_entrada_contables.valor_entrada) as total_entrada_inicial_caja"))
+                                        ->select(DB::raw("SUM(detalle_entrada_contables.valor_entrada) as       total_entrada_inicial_caja")
+                                            )
                                         ->get();
+
 
                 $ganancias_venta_dia=DB::table('facturas')
                                         ->join('detalle_facturas','detalle_facturas.fk_id_factura','=','facturas.id')
@@ -1006,10 +1009,10 @@ class Reportes {
                                         ->join('productos','detalle_inventarios.fk_id_producto','=','productos.id')
                                         ->join('departamentos','productos.fk_id_departamento','=','departamentos.id')                    
                                         ->where([
-                                                ["facturas.fk_id_sede","=",$datos->datos->sede],
-                                                ['estado_factura','=','paga'],
-                                                ['registro_factura','>=',$datos->datos->fecha." 00:00:00"],
-                                                ['registro_factura','<=',$datos->datos->fecha." 23:59:59" ]
+                                                   ["facturas.fk_id_sede","=",$datos->datos->sede],
+                                                    ['estado_factura','=','paga'],
+                                                    ['registro_factura','>=',$datos->datos->fecha." 00:00:00"],
+                                                    ['registro_factura','<=',$datos->datos->fecha." 23:59:59" ]
                                             ])
                                         
                                         ->select('facturas.id',

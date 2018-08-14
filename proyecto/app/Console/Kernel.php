@@ -30,7 +30,7 @@ class Kernel extends ConsoleKernel
         //          ->hourly();
         $schedule->command('notificacion:corte_diario')
                     ->weekdays()
-                    ->dailyAt('12:24')                 
+                    ->dailyAt('13:00')                 
                     ->timezone('America/Bogota');
 
          $schedule->command('notificacion:corte_diario')
@@ -45,14 +45,8 @@ class Kernel extends ConsoleKernel
 
         $schedule->command('pedido_automatizado')
                     ->weekdays()
-                    ->dailyAt('22:21')                 
-                    ->timezone('America/Bogota');  
-                    
-        $schedule->command('limpiar_productos_reservados')
-                    ->weekdays()
-                    ->dailyAt('22:19')                 
+                    ->dailyAt('18:04')                 
                     ->timezone('America/Bogota');            
-          
 
         
     }

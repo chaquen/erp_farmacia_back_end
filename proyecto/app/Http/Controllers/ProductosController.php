@@ -362,7 +362,7 @@ class ProductosController extends Controller
                                         "updated_at"=>$datos->hora_cliente]);
                     return response()->json(["respuesta"=>true,"mensaje"=>"Producto editado para esta sede"]);
                 }else{
-                    
+                    return response()->json(["respuesta"=>false,"mensaje"=>"Producto no esta registrado para esta sede"]);
                 }
             }else{
                    //se agrega el producto a la sede
@@ -609,11 +609,29 @@ class ProductosController extends Controller
                                                     "productos.precio_compra"
                                                     )
                                     ->get();
-
-
+                                if(count($d)>0){
+                                    if((int)$d[0]->unidades_por_blister!=0 && $valor != 0){
                                      DB::table("productos")
                                         ->where("productos.id","=",$id_producto)        
                                         ->update(["precio_compra_blister"=>(int)$d[0]->precio_compra/(int)$valor,"precio_compra_unidad"=>(int)((int)$d[0]->precio_compra/(int)$valor)/(int)$d[0]->unidades_por_blister]);
+                                    }else{
+                                        return response()->json(["respuesta"=>false,"mensaje"=>"Unidades de blister estan en cero"]);
+                                    }    
+                                
+
+                                    if((int)$d[0]->unidades_por_blister != 0 && $valor != 0){
+                                        DB::table("detalle_inventarios")
+                                        ->where("id","=",$d[0]->id)
+                                        ->update([
+                                                    "cantidad_existencias"=>floor(((int)$d[0]->cantidad_existencias_unidades/(int)$d[0]->unidades_por_blister)/(int)$valor),
+                                                    "cantidad_existencias_blister"=>floor(((int)$d[0]->cantidad_existencias_unidades/(int)$d[0]->unidades_por_blister))]);    
+                                    }else{
+                                        return response()->json(["respuesta"=>false,"mensaje"=>"Unidades de blister estan en cero"]);
+                                    }
+
+                                }    
+                                    
+                                    
 
                                 //echo $value->nombre_sede."\n";
                                 //var_dump("id = ".$value->id);
@@ -623,11 +641,7 @@ class ProductosController extends Controller
                                 //echo "cantidad_existencias_blister\n";
                                 //var_dump(floor(((int)$d[0]->cantidad_existencias_unidades/(int)$d[0]->unidades_por_blister)));
                                 
-                                DB::table("detalle_inventarios")
-                                    ->where("id","=",$d[0]->id)
-                                    ->update([
-                                                "cantidad_existencias"=>floor(((int)$d[0]->cantidad_existencias_unidades/(int)$d[0]->unidades_por_blister)/(int)$valor),
-                                                "cantidad_existencias_blister"=>floor(((int)$d[0]->cantidad_existencias_unidades/(int)$d[0]->unidades_por_blister))]);
+                                
                                 //var_dump($d[0]->cantidad_existencias);
                                 //var_dump($d[0]->id);
                                 //echo "\n";
@@ -660,12 +674,17 @@ class ProductosController extends Controller
                                                     "productos.precio_compra"
                                                     )
                                     ->get();
-
-                                    DB::table("productos")
-                                        ->where("productos.id","=",$id_producto)        
-                                        ->update(["precio_compra_blister"=>(int)$d[0]->precio_compra/(int)$d[0]->unidades_por_caja,"precio_compra_unidad"=>(int)((int)$d[0]->precio_compra/(int)$d[0]->unidades_por_caja)/(int)$valor]);
+                                
+                                   
                                 
                                 if(count($d)>0){
+                                    if((int)$d[0]->unidades_por_caja != 0 && (int)$valor != 0){
+                                         DB::table("productos")
+                                            ->where("productos.id","=",$id_producto)        
+                                            ->update(["precio_compra_blister"=>(int)$d[0]->precio_compra/(int)$d[0]->unidades_por_caja,"precio_compra_unidad"=>(int)((int)$d[0]->precio_compra/(int)$d[0]->unidades_por_caja)/(int)$valor]);
+                                    }else{
+                                        return response()->json(["respuesta"=>false,"mensaje"=>"Unidades de caja estan en cero"]);
+                                    }    
                                     //echo $value->nombre_sede."\n";
                                     //var_dump("id = ".$value->id);
                                     //echo "\n";
@@ -820,14 +839,24 @@ class ProductosController extends Controller
                                     ->join("productos","productos.id","=","detalle_inventarios.fk_id_producto")
                                     ->where([["productos.id","=",$id_producto],["fk_id_sede","=",$sede]])
                                     ->get();
-                            DB::table("productos")
+                            if($d[0]->unidades_por_blister!= 0){
+                                DB::table("productos")
                                 ->where("productos.id","=",$id_producto)        
                                 ->update(["precio_compra_blister"=>(int)$d[0]->precio_compra/(int)$valor,"precio_compra_unidad"=>(int)((int)$d[0]->precio_compra/(int)$valor)/(int)$d[0]->unidades_por_blister]);
-
-
-                            DB::table("detalle_inventarios")
+    
+                            }else{
+                                return response()->json(["respuesta"=>false,"mensaje"=>"Unidades de caja estan en cero"]);
+                            }        
+                            
+                            if($d[0]->unidades_por_blister!= 0){
+                                DB::table("detalle_inventarios")
                                 ->where("fk_id_producto","=",$id_producto)
-                                ->update(["cantidad_existencias"=>floor(((int)$d[0]->cantidad_existencias_unidades/(int)$d[0]->unidades_por_blister)/(int)$valor)]);
+                                ->update(["cantidad_existencias"=>floor(((int)$d[0]->cantidad_existencias_unidades/(int)$d[0]->unidades_por_blister)/(int)$valor)]);    
+                            }else{
+                                return response()->json(["respuesta"=>false,"mensaje"=>"Unidades de blister estan en cero"]);
+                            }
+
+                            
                              break;
                          case "unidades_por_blister":
                              $valor=(int)$datos->datos->valor;
@@ -842,10 +871,14 @@ class ProductosController extends Controller
                                     ->join("productos","productos.id","=","detalle_inventarios.fk_id_producto")
                                     ->where([["productos.id","=",$id_producto],["fk_id_sede","=",$sede]])
                                     ->get();
-
-                             DB::table("productos")
+                            if($d[0]->unidades_por_caja!= 0){
+                                DB::table("productos")
                                 ->where("productos.id","=",$id_producto)        
                                 ->update(["precio_compra_blister"=>(int)$d[0]->precio_compra/(int)$d[0]->unidades_por_caja,"precio_compra_unidad"=>(int)((int)$d[0]->precio_compra/(int)$d[0]->unidades_por_caja)/(int)$valor]);
+                                
+                            }else{
+                                return response()->json(["respuesta"=>false,"mensaje"=>"Unidades de blister estan en cero"]);
+                            }        
                             
 
                             DB::table("detalle_inventarios")

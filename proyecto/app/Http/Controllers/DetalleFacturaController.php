@@ -55,7 +55,7 @@ class DetalleFacturaController extends Controller
                         
                     ])
             ->get();
-
+        //var_dump($sel);    
 
          $hay=DB::table("detalle_inventarios")
             ->join("productos","productos.id","=","detalle_inventarios.fk_id_producto")     
@@ -69,7 +69,7 @@ class DetalleFacturaController extends Controller
             
             //var_dump($datos->datos->id_ticket);
             $solictadas=0;
-
+            //aqui sumo los seleccionados con anterioridad
             foreach ($sel as $key => $value) {
                 
                 switch ($value->tipo_venta) {
@@ -88,7 +88,7 @@ class DetalleFacturaController extends Controller
                 }
                 
             }
-
+            //aqui sumo los solicitados en la peticion
             switch ($value->tipo_venta) {
                     case 'unidad':
                         # code...
@@ -102,9 +102,10 @@ class DetalleFacturaController extends Controller
                         # code...
                         $solictadas+=(int)$datos->datos->producto->cantidad_producto*$hay[0]->unidades_por_caja;    
                         break;
-                }
+            }
 
             //var_dump($solictadas);
+            //var_dump($hay[0]->cantidad_existencias_unidades);
             if($hay[0]->inventario == 1 && $hay[0]->cantidad_existencias_unidades >= (int)$solictadas){
                 $id=DB::table("detalle_facturas")
                     ->insertGetId(array(

@@ -91,14 +91,13 @@ class CorteDiario extends Command
             
             $arr[$i]["reporte"]=(array)$rep->reporte_corte_diario($datos);
             $arr[$i]["sede"]=$value->nombre_sede;    
-            $nombre_sede=$value->nombre_sede;
+
             $i++;
-            Mail::send('email.corte_diario',["datos_corte"=>$arr,"fecha"=>$fecha2,"anio"=>$anio],function($m)use($destinos,$fecha2,$sede,$nombre_sede){
+            Mail::send('email.corte_diario',["datos_corte"=>$arr,"fecha"=>$fecha2,"anio"=>$anio],function($m)use($destinos,$fecha2,$sede){
             //var_dump($destinos[0]);
                $m->from("erp@asopharma.com","ERP ASOPHARMA")
-               ->to(explode(",", $destinos[0]->correos))->subject($nombre_sede.", reporte corte del dia, ".$fecha2);
+               ->to(explode(",", $destinos[0]->correos))->subject($sede.", reporte "." corte  del dia, ".$fecha2."");
            });
-
             $i=0;
 
         }
