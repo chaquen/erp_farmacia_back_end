@@ -187,15 +187,24 @@ class ImportarController extends Controller
                                                                          $value["laboratorio"]="N/A";
                                                                      }
 
-
+                                                                     //M => MENUDEO
+                                                                     //U => UNIDAD
+                                                                     //MB => MENUDEO/BLISTER   
                                                                      if($value["tipo_venta"]=="MENUDEO"){
+
                                                                          $value["tipo_venta"]="Caja";
                                                                      }else if($value["tipo_venta"]=="UNIDAD"){
+
                                                                          $value["tipo_venta"]="PorUnidad";
+
                                                                      }else if($value["tipo_venta"]=="MENUDEO/BLISTER"){
+
                                                                          $value["tipo_venta"]="CajaBlister";
+
                                                                      }else{
+
                                                                          $value["tipo_venta"]="PorUnidad";                       
+
                                                                      }
 
 
