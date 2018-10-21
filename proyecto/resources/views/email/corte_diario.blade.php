@@ -170,7 +170,11 @@
 				   @endforeach
 				
 			@endforeach
+
 			<h4>$ {{$total_ganancia}}</h4>
+			@if($ruta_Archivo!="")	
+				<h4><a href={{$ruta_Archivo}}>descargar  lista productos vendidos</a></h4>
+			@endif
 			<h4>======================================================================</h4>
 			
 

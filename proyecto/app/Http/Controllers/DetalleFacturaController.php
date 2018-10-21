@@ -274,16 +274,17 @@ class DetalleFacturaController extends Controller
                         break;
                     case 'blister':
                         $solictadas+=(int)$datos->datos->producto->cantidad_producto*$hay[0]->unidades_por_blister;    
-                        $hay_uni=(int)$hay[0]->cantidad_existencias_blister;
+                        $hay_uni=(int)$hay[0]->cantidad_existencias_unidades;
                         break;
                     case 'caja':
                         # code...
                         $solictadas+=(int)$datos->datos->producto->cantidad_producto*$hay[0]->unidades_por_caja;
-                        $hay_uni=(int)$hay[0]->cantidad_existencias;    
+                        $hay_uni=(int)$hay[0]->cantidad_existencias_unidades;    
                         break;
                 }
 
-            //var_dump($solictadas);
+            var_dump($solictadas);
+            var_dump($hay_uni);
             if($hay_uni >= (int)$solictadas){
 
                     //var_dump((int)$hay[0]->cantidad_existencias_unidades);

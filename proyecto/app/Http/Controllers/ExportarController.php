@@ -59,19 +59,10 @@ class ExportarController extends Controller
                     Excel::create($nombre_reporte, function($excel) use($reporte){
                          // use($datos->datos->nombre_reporte)   
                         $excel->sheet('productos',function($sheet) use($reporte){
-                                //var_dump($id);
-                                /*$datos=Producto::where('nombre_producto','LIKE','A%')
-                                                                        ->limit('10')
-                                                                        ->get();*/
-
-                                //var_dump($reporte["datos"]);
-                           
-                                $sheet->fromArray($reporte["datos"]);
+                               $sheet->fromArray($reporte["datos"]);
                         });
                     })->store('xls', substr(base_path(),0,-8)."archivos/exportacion/excel");
                             
-                    //CREAR ARCHIVO TXT
-                    //FALTA PILAS 20:40
                     $mi_archivo="";
                     if($tipo_reporte=="reporte_bajo_inventario"){
                         $mi_archivo="pedidos_reporte_bajo_inventario_".explode(" ",$datos->hora_cliente)[0].".txt";
@@ -93,8 +84,7 @@ class ExportarController extends Controller
                                         
                             
                         }
-                        //echo $datos->datos->tipo_separacion_archivo_plano;
-                        //var_dump($contenido);
+                       
                         File::put($ruta,$contenido);
 
                             
@@ -116,9 +106,6 @@ class ExportarController extends Controller
                     
             }else{
                 echo json_encode(["mensaje"=>"No hay datos para exportar","respuesta"=>false]);
-
-            
-                //$datos= json_decode($request->get("datos"));
             }
 		
     }

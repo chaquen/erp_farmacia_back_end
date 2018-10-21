@@ -10,7 +10,7 @@
 | and give it the controller to call when that URI is requested.
 |
 */
-header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Origin: https://marketing-ic.co');
 header( 'Access-Control-Allow-Headers: Authorization, Content-Type' );
 header( 'Access-Control-Allow-Methods: GET,POST,PUT,DELETE,OPTIONS' );
 use Illuminate\Http\Request;
@@ -135,6 +135,7 @@ Route::post('/reporte_corte_diario','ReportesController@reporte_corte_diario');
 Route::post("/exportar/{tipo_reporte}","ExportarController@exportar_a_xls");
 Route::post("/importacion","ImportarController@importar_xls");
 Route::post("/importacion_ftp","ImportarController@importar_xls_ftp");
+Route::get("/importacion_ftp_get/{sede}/{id_usuario}/{nombre_archivo}/{tipo_importacion}","ImportarController@importar_xls_ftp_get");
 Route::get("/mi_ftp",function(){
         $ruta=$des=substr(base_path(),0,-8)."ftp";  
         

@@ -9,7 +9,13 @@ use App\Http\Requests;
 
 use Maatwebsite\Excel\Facades\Excel;
 
+use DateTimeZone; 
+
+use Jenssegers\Date\Date;
+
+
 use DB;
+
 
 
 
@@ -41,12 +47,14 @@ class ImportarController extends Controller
                                         //linea para impedir error de memoria
                                         ini_set('memory_limit', '-1'); 
                                         
-                                                switch($datos->datos->sede){
+                                        switch($datos->datos->sede){
                                                     case 0:
+
+                                                        $ultimo_id;
 
                                                         $mis_productos=DB::table('productos')
                                                                           ->get();
-                                                        $ultimo_id;
+                                                        
                                                         $mis_departamentos=DB::table('departamentos')
                                                                             ->get();
                                                         $mis_proveedores=DB::table('proveedors')
@@ -68,7 +76,7 @@ class ImportarController extends Controller
                                                         $sin_cate=0;
                                                         $validar_existencia=false;//EXISTE EN BASE DE DATOS
                                                         //echo "<>".count($mis_productos)."<>";
-                                                           if(count($mis_productos)==0){
+                                                          if(count($mis_productos)==0){
 
                                                                 $validar_existencia=false;
                                                                   $existe_en_db=false;
@@ -84,36 +92,49 @@ class ImportarController extends Controller
                                                          
                                                          
                                                         $lote_productos_excel = array_chunk($arr, $div_l);
-                                                        //var_dump($lote_productos_excel);
+                                                        //var_dump(count($lote_productos_excel));
                                                         $lpx=array();
+                                                        $qq=0;
+                                                        $rr=0;
                                                         foreach ($lote_productos_excel as $key => $l) {
-                                                                
+                                                               //var_dump($l); 
+                                                               //var_dump(count($l)); 
+                                                               //echo "=======================";
+                                                              
                                                                foreach($l as $k => $v){
+                                                                //echo $v["codigo_coopidrogas"]."</br>";
                                                                    if(array_key_exists("codigo_coopidrogas",$v) && $v["codigo_coopidrogas"]!=NULL){
                                                                        //var_dump($v);
                                                                        //echo "=======";
                                                                          $com=$v["codigo_coopidrogas"];
-                                                                         if($v["codigo_venta_menudeo_o_unidad"]==null){
+                                                                        if($v["codigo_venta_menudeo_o_unidad"]==null){
 
                                                                             $com2=$v["codigo_coopidrogas"];
 
-                                                                         }else{
+                                                                        }else{
                                                                             $com2=$v["codigo_venta_menudeo_o_unidad"];    
-                                                                         }
+                                                                        }
 
 
                                                                          
                                                                         //echo $com."\n";
-                                                                         $pr=DB::table("productos")
-                                                                         ->where("codigo_producto","LIKE",$com)
-                                                                         ->orwhere("codigo_distribuidor","LIKE",$com2)
-                                                                             ->get();    
-                                                                         
-                                                                       if(count($pr)==0){
-                                                                          $lpx[$k]=$v;  
-                                                                       }else{
-                                                                           $arr_con_coincidencias_en_bd[$k]=$v;
-                                                                       }
+                                                                        //echo $com2."\n";
+                                                                        $pr=DB::table("productos")
+                                                                                  ->where("codigo_producto","LIKE",$com)
+                                                                                  ->orwhere("codigo_distribuidor","LIKE",$com2)
+                                                                                  ->get();    
+                                                                             
+                                                                       
+                                                                        if(count($pr)==0){
+                                                                          //echo $v["codigo_coopidrogas"]."</br>";
+                                                                          $lpx[$qq]=$v;  
+                                                                          $pr=[];
+                                                                          $qq++;
+                                                                        }else{
+                                                                           $arr_con_coincidencias_en_bd[$rr]=$v;
+                                                                           $pr=[];
+                                                                           $rr++;
+                                                                        }
                                                                        
                                                                        
                                                                        
@@ -122,8 +143,11 @@ class ImportarController extends Controller
                                                                }     
 
                                                         }
+
                                                             
-                                                            foreach ($lpx as $key => $value) {
+                                                        foreach ($lpx as $key => $value) {
+                                                                //var_dump($value["codigo_venta_menudeo_o_unidad"]);
+                                                                //echo "</br>";
                                                                 $registar=true;    
                                                                
                                                                  //VALIDACION DE LA EXISTENCIA DE LA CATEGORIA
@@ -203,10 +227,9 @@ class ImportarController extends Controller
 
                                                                      }else{
 
-                                                                         $value["tipo_venta"]="PorUnidad";                       
+                                                                         $value["tipo_venta"]="PorUnidad";
 
                                                                      }
-
 
                                                                      if($value["numero_de_unidades_presentacion"]==NULL){
                                                                         $value["numero_de_unidades_presentacion"]=1; 
@@ -239,45 +262,6 @@ class ImportarController extends Controller
                                                                              }
 
 
-                                                                     }
-
-                                                                     if($value["precio_costo_blister"]==NULL){
-                                                                         $registar=false;
-                                                                     }else{
-
-
-                                                                            $vs=explode("$",$value["precio_costo_blister"]);
-                                                                                                 //var_dump($vs);
-
-                                                                             if(count($vs)==1){
-                                                                                 $value["precio_costo_blister"]=$vs[0];    
-                                                                             }else{
-                                                                                 $value["precio_costo_blister"]=$vs[1];    
-                                                                             }
-
-
-                                                                     }
-
-                                                                     if($value["precio_costo_unidad_blister"]==NULL){
-                                                                         $registar=false;
-                                                                     }else{
-
-
-                                                                            $vs=explode("$",$value["precio_costo_unidad_blister"]);
-                                                                                                 //var_dump($vs);
-
-                                                                             if(count($vs)==1){
-                                                                                 $value["precio_costo_unidad_blister"]=$vs[0];    
-                                                                             }else{
-                                                                                 $value["precio_costo_unidad_blister"]=$vs[1];    
-                                                                             }
-
-
-                                                                     }
-
-
-                                                                     if($value["valor_impuesto"]==NULL){
-                                                                         $value["valor_impuesto"]=0;
                                                                      }
 
                                                                      if($value["precio_costo_impuesto"]==NULL){
@@ -313,6 +297,22 @@ class ImportarController extends Controller
 
 
                                                                      }
+                                                                     if($value["precio_costo_blister"]==NULL){
+                                                                         $registar=false;
+                                                                     }else{
+
+
+                                                                            $vs=explode("$",$value["precio_costo_blister"]);
+                                                                                                 //var_dump($vs);
+
+                                                                             if(count($vs)==1){
+                                                                                 $value["precio_costo_blister"]=$vs[0];    
+                                                                             }else{
+                                                                                 $value["precio_costo_blister"]=$vs[1];    
+                                                                             }
+
+
+                                                                     }
 
                                                                      if($value["precio_costo_unidad_blister_impuesto"]==NULL){
                                                                          $registar=false;
@@ -330,6 +330,29 @@ class ImportarController extends Controller
 
 
                                                                      }
+
+                                                                     if($value["precio_costo_unidad_blister"]==NULL){
+                                                                         $registar=false;
+                                                                     }else{
+
+
+                                                                            $vs=explode("$",$value["precio_costo_unidad_blister"]);
+                                                                                                 //var_dump($vs);
+
+                                                                             if(count($vs)==1){
+                                                                                 $value["precio_costo_unidad_blister"]=$vs[0];    
+                                                                             }else{
+                                                                                 $value["precio_costo_unidad_blister"]=$vs[1];    
+                                                                             }
+
+
+                                                                     }
+
+
+                                                                     if($value["valor_impuesto"]==NULL){
+                                                                         $value["valor_impuesto"]=0;
+                                                                     }
+                                                                     
 
                                                                      if($value["porcentaje_ganancia"]==NULL){
                                                                          $value["porcentaje_ganancia"]=0;    
@@ -397,13 +420,12 @@ class ImportarController extends Controller
                                                                          $value["maximo_inventario"]=0;
                                                                      }
 
-
-
                                                                      // validacion para el formato de precio_venta_menudeo
-
-
+                                                                     //var_dump($registradosar);
+                                                                     //var_dump($value["codigo_coopidrogas"]);
                                                                      if($registar && $value["codigo_coopidrogas"]!=NULL){
-
+                                                                          //var_dump($value["codigo_coopidrogas"]);
+                                                                          //echo "</  br>";  
 
                                                                           $arr_sin_coincidencias_en_bd[$i]=[
                                                                              "id"=>$ultimo_id++,
@@ -419,6 +441,9 @@ class ImportarController extends Controller
                                                                              "precio_compra"=>$value["precio_costo"],
                                                                              "precio_compra_blister"=>$value["precio_costo_blister"],
                                                                              "precio_compra_unidad"=>$value["precio_costo_unidad_blister"],
+                                                                             "precio_compra_impuesto"=>$value["precio_costo_impuesto"],
+                                                                             "precio_compra_blister_impuesto"=>$value["precio_costo_blister_impuesto"],
+                                                                             "precio_compra_unidad_impuesto"=>$value["precio_costo_unidad_blister_impuesto"],
                                                                              "porcentaje_ganancia"=>$value["porcentaje_ganancia"],
                                                                              "porcentaje_ganancia_blister"=>$value["porcentaje_ganancia_blister"],
                                                                              "porcentaje_ganancia_unidad"=>$value["porcentaje_ganancia_unidad_blister"],
@@ -457,10 +482,10 @@ class ImportarController extends Controller
 
                                                                  }
                                                                      
-                                                            }
+                                                        }
                                                             
                                                             
-                                                            if(count($arr_sin_coincidencias_en_bd)>0){
+                                                        if(count($arr_sin_coincidencias_en_bd)>0){
 
                                                                     $limitStatements = DB::selectOne(
                                                                             DB::raw("SELECT @@max_prepared_stmt_count AS count")
@@ -501,10 +526,6 @@ class ImportarController extends Controller
 
 
                                                                                     }       
-
-
-
-
                                                                                 $error=false;
                                                                             } catch (\Illuminate\Database\QueryException $e) {
                                                                                 if($e->getCode() === '23000') {
@@ -542,10 +563,9 @@ class ImportarController extends Controller
                                                                    }else{
                                                                          echo json_encode(["respuesta"=>false,"mensaje"=>"Ha ocurrido un error \n{".$msn_error."}","error"=>$msn_error]);
                                                                    }
-                                                           }
-                                                            else{
+                                                        }else{
 
-                                                                     if(file_exists("archivos/exportacion/excel/productos_importados_repetidos_".explode(" ", $datos->hora_cliente)[0]).".xls"){
+                                                                    if(file_exists("archivos/exportacion/excel/productos_importados_repetidos_".explode(" ", $datos->hora_cliente)[0]).".xls"){
 
                                                                         $nom_arc="productos_importados_repetidos_".explode(" ", $datos->hora_cliente)[0]."_".explode(":",explode(" ", $datos->hora_cliente)[1])[2];
                                                                     }else{
@@ -558,11 +578,11 @@ class ImportarController extends Controller
                                                                                     $sheet->fromArray($arr_con_coincidencias_en_bd);
                                                                             });
                                                                         })->store('xls', substr(base_path(),0,-8)."archivos/exportacion/excel");
-                                                                        echo json_encode(["respuesta"=>true,"mensaje"=>"Parece que no se ha registrado ningun producto",
+                                                                    echo json_encode(["respuesta"=>true,"mensaje"=>"Parece que no se ha registrado ningun producto",
                                                                                     "repetidos"=>"archivos/exportacion/excel/".$nom_arc.".xls"]);
                                                                       
 
-                                                           }
+                                                        }
                                                         break;
                                                     default :
                                                             // ingreso inventario a sede
@@ -584,7 +604,7 @@ class ImportarController extends Controller
 
                                                                            
                                                                             $dt=DB::table('productos')
-                                                                                ->where("codigo_producto","=",$value["codigo_producto"])
+                                                                                ->where("codigo_producto","=",$value["codigo_coopidrogas"])
                                                                                 ->get(); 
 
                                                                             if(count($dt)>0){
@@ -690,10 +710,12 @@ class ImportarController extends Controller
                                                                                              "precio_mayoreo_sede"=>$value["precio_venta_unidad_blister"],   
                                                                                              "created_at"=>$datos->datos->hora_cliente,
                                                                                              "updated_at"=>$datos->datos->hora_cliente]);
-                                                                                                if($value["total"]!=null){
+                                                                                              
+                                                                                              if($value["total"]!=null){
                                                                                                     DB::table("detalle_inventarios")
                                                                                                          ->where("id","=",$id_dt)
                                                                                                          ->increment("cantidad_existencias_unidades",(int)$value["total"]);
+                                                                                             
                                                                                                     $queda=DB::table("detalle_inventarios")
                                                                                                                  ->join("productos","productos.id","=","detalle_inventarios.fk_id_producto")   
                                                                                                                  ->where("detalle_inventarios.id","=",$id_dt)
@@ -880,85 +902,7 @@ class ImportarController extends Controller
                                                                                             }
                                                                                             
 
-                                                                                            /*
-                                                                                                     if($dt[0]->tipo_venta_producto=="PorUnidad"){
-                                                                                                 DB::table('movimientos_inventario')
-                                                                                                    ->insertGetId(["fk_id_det_inventario"=>$dts[0]->id,
-                                                                                                    "habia"=>$dts[0]->cantidad_existencias,
-                                                                                                    "tipo"=>"ENTRADA",
-                                                                                                    "descripcion"=>"unidad",    
-                                                                                                    "fk_id_usuario"=>$datos->datos->id_usuario,
-                                                                                                    "cantidad"=>$value["inventario"],
-                                                                                                    "quedan"=>$value["inventario"]+$dts[0]->cantidad_existencias,
-                                                                                                    "observaciones"=>"entrada importacon de productos ",
-                                                                                                    "created_at"=>$datos->datos->hora_cliente,
-                                                                                                    "updated_at"=>$datos->datos->hora_cliente        ]);  
-
-                                                                                            }
-                                                                                            else if($dts[0]->tipo_venta_producto=="Caja"){
-                                                                                                 DB::table('movimientos_inventario')
-                                                                                                    ->insertGetId(["fk_id_det_inventario"=>$dts[0]->id,
-                                                                                                    "habia"=>$dts[0]->cantidad_existencias,
-                                                                                                    "tipo"=>"ENTRADA",
-                                                                                                    "descripcion"=>"caja",    
-                                                                                                    "fk_id_usuario"=>$datos->datos->id_usuario,
-                                                                                                    "cantidad"=>$value["inventario"],
-                                                                                                    "quedan"=>$value["inventario"]+$dts[0]->cantidad_existencias,
-                                                                                                    "observaciones"=>"entrada importacon de productos ",
-                                                                                                    "created_at"=>$datos->datos->hora_cliente,
-                                                                                                    "updated_at"=>$datos->datos->hora_cliente        ]); 
-
-                                                                                                DB::table('movimientos_inventario')
-                                                                                                    ->insertGetId(["fk_id_det_inventario"=>$dts[0]->id,
-                                                                                                    "habia"=>$dts[0]->cantidad_existencias_unidades,
-                                                                                                    "tipo"=>"ENTRADA",
-                                                                                                    "descripcion"=>"unidad",    
-                                                                                                    "fk_id_usuario"=>$datos->datos->id_usuario,
-                                                                                                    "cantidad"=>$value["inventario"]*$dts[0]->unidades_por_caja+$value["sueltas"],                              
-                                                                                                    "quedan"=>$value["inventario"]*$dts[0]->unidades_por_caja+$value["sueltas"]+$dts[0]->cantidad_existencias,
-                                                                                                    "observaciones"=>"entrada importacon de productos ",
-                                                                                                    "created_at"=>$datos->datos->hora_cliente,
-                                                                                                    "updated_at"=>$datos->datos->hora_cliente        ]); 
-                                                                                            }
-                                                                                            else{
-
-                                                                                                 DB::table('movimientos_inventario')
-                                                                                                    ->insertGetId(["fk_id_det_inventario"=>$dts[0]->id,
-                                                                                                    "habia"=>$dts[0]->cantidad_existencias,
-                                                                                                    "tipo"=>"ENTRADA",
-                                                                                                    "descripcion"=>"caja",    
-                                                                                                    "fk_id_usuario"=>$datos->datos->id_usuario,
-                                                                                                    "cantidad"=>$value["inventario"],
-                                                                                                    "quedan"=>$value["inventario"]+$dts[0]->cantidad_existencias,
-                                                                                                    "observaciones"=>"entrada importacon de productos ",
-                                                                                                    "created_at"=>$datos->datos->hora_cliente,
-                                                                                                    "updated_at"=>$datos->datos->hora_cliente        ]); 
-
-                                                                                                DB::table('movimientos_inventario')
-                                                                                                    ->insertGetId(["fk_id_det_inventario"=>$dts[0]->id,
-                                                                                                    "habia"=>$dts[0]->cantidad_existencias_blister,
-                                                                                                    "tipo"=>"ENTRADA",
-                                                                                                    "descripcion"=>"blister",    
-                                                                                                    "fk_id_usuario"=>$datos->datos->id_usuario,
-                                                                                                    "cantidad"=>$uni_blister,                              
-                                                                                                    "quedan"=>$uni_blister+$dts[0]->cantidad_existencias_blister,
-                                                                                                    "observaciones"=>"entrada importacon de productos ",
-                                                                                                    "created_at"=>$datos->datos->hora_cliente,
-                                                                                                    "updated_at"=>$datos->datos->hora_cliente        ]); 
-                                                                                                DB::table('movimientos_inventario')
-                                                                                                    ->insertGetId(["fk_id_det_inventario"=>$dts[0]->id,
-                                                                                                    "habia"=>$dts[0]->cantidad_existencias_unidades,
-                                                                                                    "tipo"=>"ENTRADA",
-                                                                                                    "descripcion"=>"unidad",    
-                                                                                                    "fk_id_usuario"=>$datos->datos->id_usuario,
-                                                                                                    "cantidad"=>$uni_blister*$dts[0]->unidades_por_blister+$value["sueltas"],                              
-                                                                                                    "quedan"=>$uni_blister+$dts[0]->cantidad_existencias_blister+$value["sueltas"]+$dts[0]->cantidad_existencias_unidades,
-                                                                                                    "observaciones"=>"entrada importacon de productos ",
-                                                                                                    "created_at"=>$datos->datos->hora_cliente,
-                                                                                                    "updated_at"=>$datos->datos->hora_cliente        ]); 
-                                                                                            }                   
-    
-                                                                                            */
+                                                                                           
                                                                                          }
                                                                                          else{
                                                                                              if($value["total"]!=null){
@@ -975,83 +919,7 @@ class ImportarController extends Controller
                                                                                              }
 
                                                                                             
-                                                                                            /*
-                                                                                            if($dt[0]->tipo_venta_producto=="PorUnidad"){
-                                                                                                 DB::table('movimientos_inventario')
-                                                                                                    ->insertGetId(["fk_id_det_inventario"=>$dts[0]->id,
-                                                                                                     "habia"=>"0",
-                                                                                                    "tipo"=>"ENTRADA",
-                                                                                                    "descripcion"=>"unidad",    
-                                                                                                    "fk_id_usuario"=>$datos->datos->id_usuario,
-                                                                                                    "cantidad"=>$value["inventario"],
-                                                                                                    "quedan"=>$value["inventario"]+$dts[0]->cantidad_existencias,
-                                                                                                     "observaciones"=>"entrada inicial de importacon de productos",
-                                                                                                    "created_at"=>$datos->datos->hora_cliente,
-                                                                                                    "updated_at"=>$datos->datos->hora_cliente        ]);  
-
-                                                                                            }
-                                                                                            else if($dt[0]->tipo_venta_producto=="Caja"){
-                                                                                                 DB::table('movimientos_inventario')
-                                                                                                    ->insertGetId(["fk_id_det_inventario"=>$dts[0]->id,
-                                                                                                    "habia"=>"0",
-                                                                                                    "tipo"=>"ENTRADA",
-                                                                                                    "descripcion"=>"caja",    
-                                                                                                    "fk_id_usuario"=>$datos->datos->id_usuario,
-                                                                                                    "cantidad"=>$value["inventario"],
-                                                                                                    "quedan"=>$value["inventario"]+$dts[0]->cantidad_existencias,
-                                                                                                      "observaciones"=>"entrada inicial de importacon de productos",
-                                                                                                    "created_at"=>$datos->datos->hora_cliente,
-                                                                                                    "updated_at"=>$datos->datos->hora_cliente        ]); 
-
-                                                                                                DB::table('movimientos_inventario')
-                                                                                                    ->insertGetId(["fk_id_det_inventario"=>$dts[0]->id,
-                                                                                                     "habia"=>"0",
-                                                                                                    "tipo"=>"ENTRADA",
-                                                                                                    "descripcion"=>"unidad",    
-                                                                                                    "fk_id_usuario"=>$datos->datos->id_usuario,
-                                                                                                    "cantidad"=>$value["inventario"]*$dts[0]->unidades_por_caja+$value["sueltas"],                              
-                                                                                                    "quedan"=>$value["inventario"]*$dts[0]->unidades_por_caja+$value["sueltas"]+$dts[0]->cantidad_existencias,
-                                                                                                     "observaciones"=>"entrada inicial de importacon de productos",
-                                                                                                    "created_at"=>$datos->datos->hora_cliente,
-                                                                                                    "updated_at"=>$datos->datos->hora_cliente        ]); 
-                                                                                            }
-                                                                                            else{
-                                                                                                  DB::table('movimientos_inventario')
-                                                                                                    ->insertGetId(["fk_id_det_inventario"=>$dts[0]->id,
-                                                                                                    "habia"=>$dts[0]->cantidad_existencias,
-                                                                                                    "tipo"=>"ENTRADA",
-                                                                                                    "descripcion"=>"caja",    
-                                                                                                    "fk_id_usuario"=>$datos->datos->id_usuario,
-                                                                                                    "cantidad"=>$value["inventario"],
-                                                                                                    "quedan"=>$value["inventario"]+$dts[0]->cantidad_existencias,
-                                                                                                    "observaciones"=>"entrada importacon de productos inicial",
-                                                                                                    "created_at"=>$datos->datos->hora_cliente,
-                                                                                                    "updated_at"=>$datos->datos->hora_cliente        ]); 
-
-                                                                                                DB::table('movimientos_inventario')
-                                                                                                    ->insertGetId(["fk_id_det_inventario"=>$dts[0]->id,
-                                                                                                    "habia"=>$dts[0]->cantidad_existencias_blister,
-                                                                                                    "tipo"=>"ENTRADA",
-                                                                                                    "descripcion"=>"blister",    
-                                                                                                    "fk_id_usuario"=>$datos->datos->id_usuario,
-                                                                                                    "cantidad"=>$uni_blister,                              
-                                                                                                    "quedan"=>$uni_blister+$dts[0]->cantidad_existencias_blister,
-                                                                                                    "observaciones"=>"entrada importacon de productos inicial",
-                                                                                                    "created_at"=>$datos->datos->hora_cliente,
-                                                                                                    "updated_at"=>$datos->datos->hora_cliente        ]); 
-                                                                                                DB::table('movimientos_inventario')
-                                                                                                    ->insertGetId(["fk_id_det_inventario"=>$dts[0]->id,
-                                                                                                    "habia"=>"0",
-                                                                                                    "tipo"=>"ENTRADA",
-                                                                                                    "descripcion"=>"unidad",    
-                                                                                                    "fk_id_usuario"=>$datos->datos->id_usuario,
-                                                                                                    "cantidad"=>$uni_blister*$dts[0]->unidades_por_blister+$value["sueltas"],                              
-                                                                                                    "quedan"=>$uni_blister*$dts[0]->unidades_por_blister+$value["sueltas"]+$dts[0]->cantidad_existencias_unidades,
-                                                                                                    "observaciones"=>"entrada importacon de productos inicial",
-                                                                                                    "created_at"=>$datos->datos->hora_cliente,
-                                                                                                    "updated_at"=>$datos->datos->hora_cliente        ]); 
-                                                                                            }
-                                                                                            */
+                                                                                           
                                                                                          }
 
                                                                                      }
@@ -1060,12 +928,11 @@ class ImportarController extends Controller
                                                                                 //CODIGO NO EXISTE
                                                                                 $arr_no_existe[$ne]=
                                                                                                     [
-                                                                                                     "codigo_producto"=>$value["codigo_producto"],
+                                                                                                     "codigo_producto"=>$value["codigo_coopidrogas"],
                                                                                                     
                                                                                                      "precio_venta"=>$value["precio_venta"],
                                                                                                      "precio_venta_blister"=>$value["precio_venta_blister"],
-                                                                                                     "precio_venta_unidad_blister"=>$value["precio_venta_unidad_blister"],
-                                                                                                     "total"=>$value["total"]
+                                                                                                     "precio_venta_unidad_blister"=>$value["precio_venta_unidad_blister"]
                                                                                                     ];
 
                                                                                 $ne++;
@@ -1084,12 +951,11 @@ class ImportarController extends Controller
 
 
                                                             echo json_encode(["mensaje"=>"productos importados","respuesta"=>true,"no_existen"=>"archivos/exportacion/excel/NoExisten"]);
-
                                                         break;
-                                                }
+                                        }
                                         
                                            
-                                            break;
+                             break;
                                             
                        case "editar_producto":
 
@@ -1152,7 +1018,7 @@ class ImportarController extends Controller
                                             //var_dump($val);
                                             //echo "==========\n";
                                            foreach ($val as $key => $value) {
-                                                 $codigo_a_editar_1=$value["codigo_coopidrogas"];
+                                                        $codigo_a_editar_1=$value["codigo_coopidrogas"];
 
                                                         if(array_key_exists("nuevo_codigo_distribuidor",$value) && $value["nuevo_codigo_distribuidor"]!==NULL){
                                                                   $editar["codigo_distribuidor"]=$value["nuevo_codigo_distribuidor"]; 
@@ -1168,7 +1034,7 @@ class ImportarController extends Controller
                                                                    $editar["nombre_producto"]=$value["nombre_producto"]; 
                                                         }
 
-                                                        if(array_key_exists("descripcion_producto",$value) && $value["descripcion_producto"]!==NULL){
+                                                        if(array_key_exists("descripcion_farmacia",$value) && $value["descripcion_farmacia"]!==NULL){
                                                                $editar["nombre_producto"]=$value["descripcion_producto"]; 
                                                                $editar["nombre_producto_venta"]=$value["descripcion_producto"];
                                                         }
@@ -1283,26 +1149,24 @@ class ImportarController extends Controller
                                                         //var_dump($editar);
                                                         //echo "==\n";
                                                         DB::table('productos')
-                                                        ->where('codigo_distribuidor',"LIKE", $codigo_a_editar_1)
-                                                        ->orwhere('codigo_producto', "LIKE",$codigo_a_editar_1)
-                                                        ->update($editar);          
+                                                            ->where('codigo_distribuidor',"LIKE", $codigo_a_editar_1)
+                                                            ->orwhere('codigo_producto', "LIKE",$codigo_a_editar_1)
+                                                            ->update($editar);          
 
                                                         $editar=array();
-                                                  if(count($editar_dt)>0){
-//                                                       echo "====";
-//                                                       var_dump($editar_dt);
-//                                                       echo "==\n";
-                                                      $pd=DB::table('productos')
-                                                        ->where('codigo_distribuidor',"LIKE", $codigo_a_editar_1)
-                                                        ->orwhere('codigo_producto', "LIKE",$codigo_a_editar_1)
-                                                        ->get();
-                                                      
-                                                      DB::table('detalle_inventarios')
-                                                        ->where('fk_id_producto',"=", $pd[0]->id)                                                                    
-                                                        ->update($editar_dt);   
-                                                       $editar_dt=array();
-                                                  }  
-                                                  $i++;  
+                                                        if(count($editar_dt)>0){
+                                                              
+                                                              $pd=DB::table('productos')
+                                                                ->where('codigo_distribuidor',"LIKE", $codigo_a_editar_1)
+                                                                ->orwhere('codigo_producto', "LIKE",$codigo_a_editar_1)
+                                                                ->get();
+                                                              
+                                                              DB::table('detalle_inventarios')
+                                                                ->where('fk_id_producto',"=", $pd[0]->id)                                                                    
+                                                                ->update($editar_dt);   
+                                                               $editar_dt=array();
+                                                        }  
+                                                          $i++;  
 
                                             }
                                         }
@@ -1335,7 +1199,7 @@ class ImportarController extends Controller
                        case "ajustar_inventario_sede":
 
                                         if($datos->datos->sede!="0" && $datos->datos->sede!="--"){
-                                            ini_set('max_execution_time', 6000); //900 seconds = 5 minutes
+                                            ini_set('max_execution_time', 60000); //900 seconds = 5 minutes
                                             //linea para impedir error de memoria
                                             ini_set('memory_limit', '-1'); 
                                         
@@ -1351,266 +1215,175 @@ class ImportarController extends Controller
                                                             $new_arr=[];
                                                             $arr_no_existe=[];
                                                             $ne=0;
-
+                                                            if(count($arr)<100){
+                                                                $div_l=ceil(count($arr)/10);
+                                                            }else{
+                                                                $div_l=ceil(count($arr)/100);
+                                                            }
+                                                            //echo $div_l;
+                                                            $lote_productos_excel = array_chunk($arr, $div_l);
                                                             if(count($arr)>0){
-                                                                   foreach ($arr as $key => $value) {
+                                                                   foreach ($lote_productos_excel as $key => $valor) {
+                                                                        foreach ($valor as $key => $value) {
 
-                                                                           
-                                                                            $dt=DB::table('productos')
-                                                                                ->where("codigo_producto","=",$value["codigo_producto"])
-                                                                                ->orwhere("codigo_distribuidor","=",$value["codigo_producto"])
-                                                                                ->get(); 
+                                                                            if(array_key_exists("codigo_producto",$value) && $value["codigo_producto"]!=NULL){
+                                                                                 $dt=DB::table('productos')
+                                                                                    ->where("codigo_producto","=",$value["codigo_producto"])
+                                                                                    ->orwhere("codigo_distribuidor","=",$value["codigo_producto"])
+                                                                                    ->get(); 
 
-                                                                            if(count($dt)>0){
-                                                                                 //BUSCAR EN SEDE
-                                                                                 $dts=DB::table("detalle_inventarios")
-                                                                                         ->join("productos","productos.id","=","detalle_inventarios.fk_id_producto")
-                                                                                        ->where([
-                                                                                            ["detalle_inventarios.fk_id_producto","=",$dt[0]->id],
-                                                                                            ["detalle_inventarios.fk_id_sede","=",$datos->datos->sede]
-                                                                                            ])
-                                                                                         ->select("detalle_inventarios.id",
-                                                                                                'detalle_inventarios.fk_id_producto',
-                                                                                                 "productos.unidades_por_caja",
-                                                                                                 "productos.unidades_por_blister",
-                                                                                                 "detalle_inventarios.cantidad_existencias",
-                                                                                                 "detalle_inventarios.cantidad_existencias_unidades",
-                                                                                                 "detalle_inventarios.cantidad_existencias_blister",
-                                                                                                 "detalle_inventarios.precio_venta_sede",
-                                                                                                 "detalle_inventarios.precio_venta_blister_sede",
-                                                                                                 "detalle_inventarios.precio_mayoreo_sede",
-                                                                                                 "productos.precio_compra",
-                                                                                                 "productos.precio_compra_blister",
-                                                                                                 "productos.precio_compra_unidad",
-                                                                                                 "productos.precio_venta",
-                                                                                                 "productos.precio_venta_blister",
-                                                                                                 "productos.precio_mayoreo",
-                                                                                                 "productos.tipo_venta_producto")
-                                                                                        ->get();
-                                                                                    
-                                                                                    //DATOS A ACTUALIZAR    
-                                                                                   if(count($dts)>0){
-                                                                                        $act_detalle=[];
-                                                                                         $act_producto=[];
-                                                                                         $ia=0;
+                                                                                if(count($dt)>0){
+                                                                                     //BUSCAR EN SEDE
+                                                                                     $dts=DB::table("detalle_inventarios")
+                                                                                             ->join("productos","productos.id","=","detalle_inventarios.fk_id_producto")
+                                                                                            ->where([
+                                                                                                ["detalle_inventarios.fk_id_producto","=",$dt[0]->id],
+                                                                                                ["detalle_inventarios.fk_id_sede","=",$datos->datos->sede]
+                                                                                                ])
+                                                                                             ->select("detalle_inventarios.id",
+                                                                                                    'detalle_inventarios.fk_id_producto',
+                                                                                                     "productos.unidades_por_caja",
+                                                                                                     "productos.unidades_por_blister",
+                                                                                                     "detalle_inventarios.cantidad_existencias",
+                                                                                                     "detalle_inventarios.cantidad_existencias_unidades",
+                                                                                                     "detalle_inventarios.cantidad_existencias_blister",
+                                                                                                     "detalle_inventarios.precio_venta_sede",
+                                                                                                     "detalle_inventarios.precio_venta_blister_sede",
+                                                                                                     "detalle_inventarios.precio_mayoreo_sede",
+                                                                                                     "productos.precio_compra",
+                                                                                                     "productos.precio_compra_blister",
+                                                                                                     "productos.precio_compra_unidad",
+                                                                                                     "productos.precio_venta",
+                                                                                                     "productos.precio_venta_blister",
+                                                                                                     "productos.precio_mayoreo",
+                                                                                                     "productos.tipo_venta_producto")
+                                                                                            ->get();
+                                                                                        
+                                                                                        //DATOS A ACTUALIZAR    
+                                                                                       if(count($dts)>0){
+                                                                                            $act_detalle=[];
+                                                                                             $act_producto=[];
+                                                                                             $ia=0;
 
-                                                                                        //valido precios venta
-                                                                                        if($value["precio_venta"]!=NULL){
+                                                                                            //valido precios venta
+                                                                                            if($value["precio_venta"]!=NULL){
 
-                                                                                                 if((int)$dts[0]->precio_venta==0){
+                                                                                                     if((int)$dts[0]->precio_venta==0){
 
-                                                                                                     $precio=1;
+                                                                                                         $precio=1;
 
-                                                                                                 }else{
+                                                                                                     }else{
 
-                                                                                                     $precio=(int)$dts[0]->precio_venta;
+                                                                                                         $precio=(int)$dts[0]->precio_venta;
 
-                                                                                                 }
+                                                                                                     }
 
-                                                                                                 $act_detalle["precio_venta_sede"]=$value["precio_venta"];
-                                                                                                 $DIF=(int)$value["precio_venta"]-$dts[0]->precio_compra;
-                                                                                                 $act_detalle["porcentaje_ganancia_sede"]=round((($DIF)*100)/$precio,2);
-
-
-                                                                                         }   
-
-                                                                                         if($value["precio_venta_blister"]!=NULL){
-                                                                                                 if((int)$dts[0]->precio_venta_blister==0){
-                                                                                                     $precio_b=1;
-                                                                                                 }else{
-                                                                                                     $precio_b=(int)$dts[0]->precio_venta_blister;
-                                                                                                 }
-                                                                                                  $act_detalle["precio_venta_blister_sede"]=$value["precio_venta_blister"];
-                                                                                                  $DIF=(int)$value["precio_venta_blister"]-$dts[0]->precio_compra_blister;
-                                                                                                  $act_detalle["porcentaje_ganancia_blister_sede"]=round((($DIF)*100)/$precio_b,2);
-                                                                                         }
-
-                                                                                         if($value["precio_venta_unidad_blister"]!=NULL){
-                                                                                                 if((int)$dts[0]->precio_mayoreo_sede==0){
-                                                                                                     $precio_u=1;
-
-                                                                                                 }else{
-                                                                                                     $precio_u=(int)$dts[0]->precio_mayoreo_sede;
-                                                                                                 } 
-
-                                                                                                $act_detalle["precio_mayoreo_sede"]=$value["precio_venta_unidad_blister"];
-                                                                                                $DIF=(int)$value["precio_venta_unidad_blister"]-$dts[0]->precio_compra_unidad;
-                                                                                                $act_detalle["porcentaje_ganancia_sede_unidad"]=round((($DIF)*100)/$precio_u,2);
-                                                                                         }
+                                                                                                     $act_detalle["precio_venta_sede"]=$value["precio_venta"];
+                                                                                                     $DIF=(int)$value["precio_venta"]-$dts[0]->precio_compra;
+                                                                                                     $act_detalle["porcentaje_ganancia_sede"]=round((($DIF)*100)/$precio,2);
 
 
-                                                                                              //ACTUALIZAR precio DE PRODUCTOS 
-                                                                                         //valido precios venta    
-                                                                                         if(count($act_detalle)>0){
-                                                                                                 DB::table("detalle_inventarios")
-                                                                                                       ->where("id","=",$dts[0]->id)  
-                                                                                                       ->update($act_detalle);
-                                                                                         }
-                                                                                            
+                                                                                             }   
 
-                                                                                          if($value["unidades_por_caja"]!=null){
+                                                                                             if($value["precio_venta_blister"]!=NULL){
+                                                                                                     if((int)$dts[0]->precio_venta_blister==0){
+                                                                                                         $precio_b=1;
+                                                                                                     }else{
+                                                                                                         $precio_b=(int)$dts[0]->precio_venta_blister;
+                                                                                                     }
+                                                                                                      $act_detalle["precio_venta_blister_sede"]=$value["precio_venta_blister"];
+                                                                                                      $DIF=(int)$value["precio_venta_blister"]-$dts[0]->precio_compra_blister;
+                                                                                                      $act_detalle["porcentaje_ganancia_blister_sede"]=round((($DIF)*100)/$precio_b,2);
+                                                                                             }
 
-                                                                                                   $act_producto["unidades_por_caja"]=$value["unidades_por_caja"];
+                                                                                             if($value["precio_venta_unidad_blister"]!=NULL){
+                                                                                                     if((int)$dts[0]->precio_mayoreo_sede==0){
+                                                                                                         $precio_u=1;
 
-                                                                                                   $act_producto["precio_compra_blister"]=round($dts[0]->precio_compra/$value["unidades_por_caja"],2);
-
-                                                                                          }
-
-                                                                                          if($value["unidades_por_blister"]!=null){
-
-                                                                                             $act_producto["unidades_por_blister"]=$value["unidades_por_blister"]; 
-
-                                                                                             $act_producto["precio_compra_unidad"]=round(($dts[0]->precio_compra/$value["unidades_por_caja"])/$value["unidades_por_blister"],2); 
-                                                                                          }
-
-
-                                                                                              if(array_key_exists("precio_venta_sede",$act_detalle)){
-
-                                                                                                 $act_producto["precio_venta"]=$act_detalle["precio_venta_sede"];
-
-                                                                                                 $diff=(int)$act_detalle["precio_venta_sede"]-$dts[0]->precio_compra;    
-
-
-                                                                                                 $act_producto["porcentaje_ganancia"]=round(($diff*100)/$act_detalle["precio_venta_sede"],2);
-
-                                                                                              }
-
-                                                                                              if(array_key_exists("precio_venta_blister_sede",$act_detalle)){
-
-                                                                                                 $act_producto["precio_venta_blister"]=$act_detalle["precio_venta_blister_sede"];
-
-                                                                                                 $diff=(int)$act_detalle["precio_venta_blister_sede"]-$dts[0]->precio_compra_blister;    
-
-
-                                                                                                 $act_producto["porcentaje_ganancia_blister"]=round(($diff*100)/$value["precio_venta_blister"],2);
-
-                                                                                              }
-
-                                                                                              if(array_key_exists("precio_mayoreo_sede",$act_detalle)){
-
-                                                                                                  $act_producto["precio_mayoreo"]=$act_detalle["precio_mayoreo_sede"];
-
-                                                                                                  $diff=(int)$value["precio_venta_unidad_blister"]-$dts[0]->precio_compra_unidad;    
-
-
-                                                                                                  $act_producto["porcentaje_ganancia_unidad"]=round(($diff*100)/$value["precio_venta_unidad_blister"],2);
-                                                                                              }
-
-                                                                                              if(count($act_producto)>0){
-
-                                                                                                 DB::table("productos")
-                                                                                                     ->where("id","=",$dts[0]->fk_id_producto)
-                                                                                                     ->update($act_producto);
-                                                                                              }
-
-                                                                                             //VALIDO SI EXISTEN EN LA SEDE AL COMPROBAR SI HAY O
-                                                                                             // NO REGISTROS EN LA CONSULTA   
-
-                                                                                                 $dts=DB::table("detalle_inventarios")
-                                                                                                  ->join("productos","productos.id","=","detalle_inventarios.fk_id_producto")
-                                                                                                 ->where([
-                                                                                                    
-                                                                                                     ["detalle_inventarios.fk_id_producto","=",$dt[0]->id],
-                                                                                                     ["detalle_inventarios.fk_id_sede","=",$datos->datos->sede]
-                                                                                                     ])
-                                                                                                  ->select("detalle_inventarios.id",
-                                                                                                     'detalle_inventarios.fk_id_producto',
-                                                                                                      "productos.unidades_por_caja",
-                                                                                                      "productos.unidades_por_blister",
-                                                                                                      "detalle_inventarios.cantidad_existencias",
-                                                                                                      "detalle_inventarios.cantidad_existencias_unidades",
-                                                                                                      "detalle_inventarios.cantidad_existencias_blister",
-                                                                                                      "detalle_inventarios.precio_venta_sede",
-                                                                                                      "detalle_inventarios.precio_venta_blister_sede",
-                                                                                                      "detalle_inventarios.precio_mayoreo_sede",
-                                                                                                      "productos.precio_compra",
-                                                                                                      "productos.precio_compra_blister",
-                                                                                                      "productos.precio_compra_unidad",
-                                                                                                      "productos.precio_venta",
-                                                                                                      "productos.precio_venta_blister",
-                                                                                                      "productos.precio_mayoreo",
-                                                                                                      "productos.tipo_venta_producto")
-                                                                                             ->get();     
-
-                                                                                         //BLOQUE DE ACTUALIZACION DE CANTIDADES 
-                                                                                             if(count($dts)==0){
-
-                                                                                                  $cantidades=[];
-
-                                                                                                        if($value["unidades_por_caja"]!=null && $value["unidades_por_blister"]!=null){
-                                                                                                             $cantidades["cantidad_existencias"]=floor($value["total"]/$value["unidades_por_blister"])/$value["unidades_por_caja"];  
-                                                                                                        }else{
-                                                                                                             $cantidades["cantidad_existencias"]=floor($value["total"]/$dts[0]->unidades_por_blister)/$dts[0]->unidades_por_caja;  
-                                                                                                        }     
-
-                                                                                                       if($value["unidades_por_blister"]!=null){
-                                                                                                         $cantidades["cantidad_existencias_blister"]=floor((int)$value["total"]/(int)$value["unidades_por_blister"]); 
-                                                                                                       }else{
-                                                                                                            $cantidades["cantidad_existencias_blister"]=floor((int)$value["total"]/(int)$dts[0]->unidades_por_blister);  
-                                                                                                       }
-
-
-                                                                                                       if($value["total"]==null){
-                                                                                                         $value["total"]=0;
-                                                                                                       } 
-                                                                                                       $cantidades["cantidad_existencias_unidades"]=$value["total"];
-                                                                                                       $cantidades["estado_inventario"]="activo";
-
-
-                                                                                                  $id_dt=DB::table('detalle_inventarios')
-                                                                                                      ->insertGetId(["fk_id_producto"=>$dts[0]->id,
-                                                                                                      "fk_id_sede"=>$datos->datos->sede,
-                                                                                                      "fecha_caducidad"=>"0000-00-00 00:00:00",
-                                                                                                      "cantidad_existencias"=>$cantidades["cantidad_existencias"],
-                                                                                                      "cantidad_existencias_blister"=>$cantidades["cantidad_existencias_blister"],   
-                                                                                                      "cantidad_existencias_unidades"=>$cantidades["cantidad_existencias_unidades"],
-                                                                                                       "estado_inventario"=>$cantidades["estado_inventario"],   
-                                                                                                      "minimo_inventario_sede"=>0,
-                                                                                                      "precio_venta_sede"=>$value["precio_venta"],
-                                                                                                      "precio_venta_blister_sede"=>$value["precio_venta_blister"],  
-                                                                                                      "precio_mayoreo_sede"=>$value["precio_venta_unidad_blister"],   
-                                                                                                      "created_at"=>$datos->datos->hora_cliente,
-                                                                                                      "updated_at"=>$datos->datos->hora_cliente]);
-
-
-
-
-
-
-                                                                                                     if($cantidades["cantidad_existencias_unidades"]!=null){
-
-                                                                                                         DB::table('movimientos_inventario')
-                                                                                                              ->insertGetId(["fk_id_det_inventario"=>$id_dt,
-                                                                                                              "habia"=>"0",
-                                                                                                              "fk_id_usuario"=>$datos->datos->id_usuario,    
-                                                                                                              "tipo"=>"AJUSTE",
-                                                                                                              "cantidad"=>$cantidades["cantidad_existencias_unidades"],
-                                                                                                              "quedan"=>$cantidades["cantidad_existencias_unidades"],
-                                                                                                              "created_at"=>$datos->datos->hora_cliente,
-                                                                                                              "updated_at"=>$datos->datos->hora_cliente,    
-                                                                                                              "observaciones"=>"AJUSTE DE INVENTARIO"]);
-
-                                                                                                              DB::table('detalle_inventarios')
-                                                                                                                   ->where("id","=",$id_dt)
-                                                                                                                   ->update(["estado_producto_sede"=>"1","estado_inventario"=>"activo"]);
-
+                                                                                                     }else{
+                                                                                                         $precio_u=(int)$dts[0]->precio_mayoreo_sede;
                                                                                                      } 
 
-
-
+                                                                                                    $act_detalle["precio_mayoreo_sede"]=$value["precio_venta_unidad_blister"];
+                                                                                                    $DIF=(int)$value["precio_venta_unidad_blister"]-$dts[0]->precio_compra_unidad;
+                                                                                                    $act_detalle["porcentaje_ganancia_sede_unidad"]=round((($DIF)*100)/$precio_u,2);
                                                                                              }
-                                                                                              else{
-                                                                                                 //producto ya existe actualizo existencias en sede
 
 
-                                                                                                  $dts=DB::table("detalle_inventarios")
-                                                                                                  ->join("productos","productos.id","=","detalle_inventarios.fk_id_producto")
-                                                                                                 ->where([
-                                                                                                     ["productos.codigo_producto","=",$dt[0]->codigo_producto],
-                                                                                                     ["detalle_inventarios.fk_id_producto","=",$dt[0]->id],
-                                                                                                     ["detalle_inventarios.fk_id_sede","=",$datos->datos->sede]
-                                                                                                     ])
-                                                                                                  ->select("detalle_inventarios.id",
+                                                                                                  //ACTUALIZAR precio DE PRODUCTOS 
+                                                                                             //valido precios venta    
+                                                                                             if(count($act_detalle)>0){
+                                                                                                     DB::table("detalle_inventarios")
+                                                                                                           ->where("id","=",$dts[0]->id)  
+                                                                                                           ->update($act_detalle);
+                                                                                             }
+                                                                                                
+
+                                                                                              if($value["unidades_por_caja"]!=null){
+
+                                                                                                       $act_producto["unidades_por_caja"]=$value["unidades_por_caja"];
+
+                                                                                                       $act_producto["precio_compra_blister"]=round($dts[0]->precio_compra/$value["unidades_por_caja"],2);
+
+                                                                                              }
+
+                                                                                              if($value["unidades_por_blister"]!=null){
+
+                                                                                                 $act_producto["unidades_por_blister"]=$value["unidades_por_blister"]; 
+
+                                                                                                 $act_producto["precio_compra_unidad"]=round(($dts[0]->precio_compra/$value["unidades_por_caja"])/$value["unidades_por_blister"],2); 
+                                                                                              }
+
+
+                                                                                                  if(array_key_exists("precio_venta_sede",$act_detalle)){
+
+                                                                                                     $act_producto["precio_venta"]=$act_detalle["precio_venta_sede"];
+
+                                                                                                     $diff=(int)$act_detalle["precio_venta_sede"]-$dts[0]->precio_compra;    
+
+
+                                                                                                     $act_producto["porcentaje_ganancia"]=round(($diff*100)/$act_detalle["precio_venta_sede"],2);
+
+                                                                                                  }
+
+                                                                                                  if(array_key_exists("precio_venta_blister_sede",$act_detalle)){
+
+                                                                                                     $act_producto["precio_venta_blister"]=$act_detalle["precio_venta_blister_sede"];
+
+                                                                                                     $diff=(int)$act_detalle["precio_venta_blister_sede"]-$dts[0]->precio_compra_blister;    
+
+
+                                                                                                     $act_producto["porcentaje_ganancia_blister"]=round(($diff*100)/$value["precio_venta_blister"],2);
+
+                                                                                                  }
+
+                                                                                                  if(array_key_exists("precio_mayoreo_sede",$act_detalle)){
+
+                                                                                                      $act_producto["precio_mayoreo"]=$act_detalle["precio_mayoreo_sede"];
+
+                                                                                                      $diff=(int)$value["precio_venta_unidad_blister"]-$dts[0]->precio_compra_unidad;    
+
+
+                                                                                                      $act_producto["porcentaje_ganancia_unidad"]=round(($diff*100)/$value["precio_venta_unidad_blister"],2);
+                                                                                                  }
+
+                                                                                                  if(count($act_producto)>0){
+                                                                                                        
+                                                                                                     DB::table("productos")
+                                                                                                         ->where("id","=",$dts[0]->fk_id_producto)
+                                                                                                         ->update($act_producto);
+                                                                                                  }
+
+                                                                                                 //VALIDO SI EXISTEN EN LA SEDE AL COMPROBAR SI HAY O
+                                                                                                 // NO REGISTROS EN LA CONSULTA   
+
+                                                                                                   $dts=DB::table("detalle_inventarios")
+                                                                                                      ->join("productos","productos.id","=","detalle_inventarios.fk_id_producto")
+                                                                                                     ->where([
+                                                                                                        ["detalle_inventarios.fk_id_producto","=",$dt[0]->id],
+                                                                                                        ["detalle_inventarios.fk_id_sede","=",$datos->datos->sede]
+                                                                                                         ])
+                                                                                                      ->select("detalle_inventarios.id",
                                                                                                          'detalle_inventarios.fk_id_producto',
                                                                                                           "productos.unidades_por_caja",
                                                                                                           "productos.unidades_por_blister",
@@ -1620,166 +1393,264 @@ class ImportarController extends Controller
                                                                                                           "detalle_inventarios.precio_venta_sede",
                                                                                                           "detalle_inventarios.precio_venta_blister_sede",
                                                                                                           "detalle_inventarios.precio_mayoreo_sede",
-                                                                                                           "productos.precio_compra",
+                                                                                                          "productos.precio_compra",
                                                                                                           "productos.precio_compra_blister",
                                                                                                           "productos.precio_compra_unidad",
                                                                                                           "productos.precio_venta",
                                                                                                           "productos.precio_venta_blister",
                                                                                                           "productos.precio_mayoreo",
                                                                                                           "productos.tipo_venta_producto")
-                                                                                                 ->get();        
-                                                                                                 $act_dat=[];
-                                                                                             if($value["precio_venta"]!=NULL){
+                                                                                                 ->get();     
 
+                                                                                             //BLOQUE DE ACTUALIZACION DE CANTIDADES 
+                                                                                                 if(count($dts)==0){
 
-                                                                                                     $precio=$value["precio_venta"];   
-                                                                                                     $act_dat["precio_venta_sede"]=$value["precio_venta"];
-                                                                                                     $DIF=(int)$value["precio_venta"]-$dts[0]->precio_compra;        
-                                                                                                     $act_dat["porcentaje_ganancia_sede"]=round((($DIF)*100)/$precio,2);
+                                                                                                      $cantidades=[];
+                                                                                                        if($value["unidades_por_caja"]!=null && $value["unidades_por_blister"]!=null){
+                                                                                                                 $cantidades["cantidad_existencias"]=floor($value["total"]/$value["unidades_por_blister"])/$value["unidades_por_caja"];  
+                                                                                                            }else{
+                                                                                                                 $cantidades["cantidad_existencias"]=floor($value["total"]/$dts[0]->unidades_por_blister)/$dts[0]->unidades_por_caja;  
+                                                                                                            }     
 
-
-                                                                                             }   
-
-                                                                                             if($value["precio_venta_blister"]!=NULL){
-
-                                                                                                      $precio_b=$value["precio_venta_blister"];
-                                                                                                      $act_dat["precio_venta_blister_sede"]=$value["precio_venta_blister"];
-                                                                                                      $DIF=(int)$value["precio_venta_blister"]-$dts[0]->precio_compra_blister;
-                                                                                                      $act_dat["porcentaje_ganancia_blister_sede"]=round((($DIF)*100)/$precio_b,2);
-                                                                                             }
-
-                                                                                             if($value["precio_venta_unidad_blister"]!=NULL){
-
-                                                                                                    $precio_u=(int)$value["precio_venta_unidad_blister"];
-                                                                                                    $act_dat["precio_mayoreo_sede"]=$value["precio_venta_unidad_blister"];
-                                                                                                    $DIF=(int)$value["precio_venta_unidad_blister"]-$dts[0]->precio_compra_unidad;
-                                                                                                    $act_dat["porcentaje_ganancia_sede_unidad"]=round((($DIF)*100)/$precio_u,2);
-                                                                                             }
-                                                                                             //ACTUALIZAR CANTIDAD DE PRODUCTOS 
-                                                                                             //UNIDADES BLISTER UNIDAD
-                                                                                                 if($value["unidades_por_blister"]!=null && $value["unidades_por_caja"]!=null){
-                                                                                                     $act_dat["cantidad_existencias"]=floor(($value["total"]/$value["unidades_por_blister"])/$value["unidades_por_caja"]);
-                                                                                                 }else{
-                                                                                                     $act_dat["cantidad_existencias"]=floor(($value["total"]/$dts[0]->unidades_por_blister)/$dts[0]->unidades_por_caja);
-                                                                                                 }
-
-
-                                                                                                 if($value["unidades_por_blister"]!=null){
-                                                                                                     $act_dat["cantidad_existencias_blister"]=floor($value["total"]/$value["unidades_por_blister"]);
-
-                                                                                                 }else{
-                                                                                                     $act_dat["cantidad_existencias_blister"]=floor($value["total"]/$dts[0]->unidades_por_blister);
-
-                                                                                                 }
-
-                                                                                                 $act_dat["cantidad_existencias_unidades"]=$value["total"];
-
-                                                                                                 $act_dat["estado_producto_sede"]="1";
-
-                                                                                                 $act_dat["estado_inventario"]="activo";
-
-                                                                                             if(count($act_dat)>0){
-                                                                                                     //var_dump($act_dat);
-                                                                                                     //echo "=======";
-                                                                                                     DB::table("detalle_inventarios")
-                                                                                                           ->where("id","=",$dts[0]->id)  
-                                                                                                           ->update($act_dat);
-
-                                                                                                           if($act_dat["cantidad_existencias_unidades"]!=null){
-                                                                                                              DB::table('movimientos_inventario')
-                                                                                                              ->insertGetId(["fk_id_det_inventario"=>$dts[0]->id,
-                                                                                                              "habia"=>"0",
-                                                                                                              "fk_id_usuario"=>$datos->datos->id_usuario,    
-                                                                                                              "tipo"=>"AJUSTE",
-                                                                                                              "cantidad"=>$act_dat["cantidad_existencias_unidades"],
-                                                                                                              "quedan"=>$act_dat["cantidad_existencias_unidades"],
-                                                                                                              "created_at"=>$datos->datos->hora_cliente,
-                                                                                                              "updated_at"=>$datos->datos->hora_cliente,    
-                                                                                                              "observaciones"=>"AJUSTE DE INVENTARIO UNIDADES TOTALES"]);    
+                                                                                                           if($value["unidades_por_blister"]!=null){
+                                                                                                             $cantidades["cantidad_existencias_blister"]=floor((int)$value["total"]/(int)$value["unidades_por_blister"]); 
+                                                                                                           }else{
+                                                                                                                $cantidades["cantidad_existencias_blister"]=floor((int)$value["total"]/(int)$dts[0]->unidades_por_blister);  
                                                                                                            }
-                                                                                             }
 
 
-                                                                                                 $act=[];
-                                                                                                 if($value["unidades_por_caja"]!=null){
+                                                                                                           if($value["total"]==null){
+                                                                                                             $value["total"]=0;
+                                                                                                           } 
+                                                                                                           $cantidades["cantidad_existencias_unidades"]=$value["total"];
+                                                                                                           $cantidades["estado_inventario"]="activo";
 
-                                                                                                       $act["precio_compra_blister"]=round($dts[0]->precio_compra/$value["unidades_por_caja"],2);
-                                                                                                       $act["unidades_por_caja"]=$value["unidades_por_caja"];
+
+                                                                                                      $id_dt=DB::table('detalle_inventarios')
+                                                                                                          ->insertGetId(["fk_id_producto"=>$dts[0]->id,
+                                                                                                          "fk_id_sede"=>$datos->datos->sede,
+                                                                                                          "fecha_caducidad"=>"0000-00-00 00:00:00",
+                                                                                                          "cantidad_existencias"=>$cantidades["cantidad_existencias"],
+                                                                                                          "cantidad_existencias_blister"=>$cantidades["cantidad_existencias_blister"],   
+                                                                                                          "cantidad_existencias_unidades"=>$cantidades["cantidad_existencias_unidades"],
+                                                                                                           "estado_inventario"=>$cantidades["estado_inventario"],   
+                                                                                                          "minimo_inventario_sede"=>0,
+                                                                                                          "precio_venta_sede"=>$value["precio_venta"],
+                                                                                                          "precio_venta_blister_sede"=>$value["precio_venta_blister"],  
+                                                                                                          "precio_mayoreo_sede"=>$value["precio_venta_unidad_blister"],   
+                                                                                                          "created_at"=>$datos->datos->hora_cliente,
+                                                                                                          "updated_at"=>$datos->datos->hora_cliente]);
+
+
+
+
+
+
+                                                                                                         if($cantidades["cantidad_existencias_unidades"]!=null){
+
+                                                                                                             DB::table('movimientos_inventario')
+                                                                                                                  ->insertGetId(["fk_id_det_inventario"=>$id_dt,
+                                                                                                                  "habia"=>"0",
+                                                                                                                  "fk_id_usuario"=>$datos->datos->id_usuario,    
+                                                                                                                  "tipo"=>"AJUSTE",
+                                                                                                                  "cantidad"=>$cantidades["cantidad_existencias_unidades"],
+                                                                                                                  "quedan"=>$cantidades["cantidad_existencias_unidades"],
+                                                                                                                  "created_at"=>$datos->datos->hora_cliente,
+                                                                                                                  "updated_at"=>$datos->datos->hora_cliente,    
+                                                                                                                  "observaciones"=>"AJUSTE DE INVENTARIO"]);
+
+                                                                                                                  DB::table('detalle_inventarios')
+                                                                                                                       ->where("id","=",$id_dt)
+                                                                                                                       ->update(["estado_producto_sede"=>"1","estado_inventario"=>"activo"]);
+
+                                                                                                         } 
+
+
 
                                                                                                  }
+                                                                                                  else{
+                                                                                                     //producto ya existe actualizo existencias en sede
 
-                                                                                                 if($value["unidades_por_blister"]!=null){
-                                                                                                     $act["unidades_por_blister"]=$value["unidades_por_blister"]; 
 
-                                                                                                     $act["precio_compra_unidad"]=round(($dts[0]->precio_compra/$value["unidades_por_caja"])/$value["unidades_por_blister"],2); 
+                                                                                                      $dts=DB::table("detalle_inventarios")
+                                                                                                      ->join("productos","productos.id","=","detalle_inventarios.fk_id_producto")
+                                                                                                     ->where([
+                                                                                                         ["productos.codigo_producto","=",$dt[0]->codigo_producto],
+                                                                                                         ["detalle_inventarios.fk_id_producto","=",$dt[0]->id],
+                                                                                                         ["detalle_inventarios.fk_id_sede","=",$datos->datos->sede]
+                                                                                                         ])
+                                                                                                      ->select("detalle_inventarios.id",
+                                                                                                             'detalle_inventarios.fk_id_producto',
+                                                                                                              "productos.unidades_por_caja",
+                                                                                                              "productos.unidades_por_blister",
+                                                                                                              "detalle_inventarios.cantidad_existencias",
+                                                                                                              "detalle_inventarios.cantidad_existencias_unidades",
+                                                                                                              "detalle_inventarios.cantidad_existencias_blister",
+                                                                                                              "detalle_inventarios.precio_venta_sede",
+                                                                                                              "detalle_inventarios.precio_venta_blister_sede",
+                                                                                                              "detalle_inventarios.precio_mayoreo_sede",
+                                                                                                               "productos.precio_compra",
+                                                                                                              "productos.precio_compra_blister",
+                                                                                                              "productos.precio_compra_unidad",
+                                                                                                              "productos.precio_venta",
+                                                                                                              "productos.precio_venta_blister",
+                                                                                                              "productos.precio_mayoreo",
+                                                                                                              "productos.tipo_venta_producto")
+                                                                                                     ->get();        
+                                                                                                     $act_dat=[];
+                                                                                                 if($value["precio_venta"]!=NULL){
+
+
+                                                                                                         $precio=$value["precio_venta"];   
+                                                                                                         $act_dat["precio_venta_sede"]=$value["precio_venta"];
+                                                                                                         $DIF=(int)$value["precio_venta"]-$dts[0]->precio_compra;        
+                                                                                                         $act_dat["porcentaje_ganancia_sede"]=round((($DIF)*100)/$precio,2);
+
+
+                                                                                                 }   
+
+                                                                                                 if($value["precio_venta_blister"]!=NULL){
+
+                                                                                                          $precio_b=$value["precio_venta_blister"];
+                                                                                                          $act_dat["precio_venta_blister_sede"]=$value["precio_venta_blister"];
+                                                                                                          $DIF=(int)$value["precio_venta_blister"]-$dts[0]->precio_compra_blister;
+                                                                                                          $act_dat["porcentaje_ganancia_blister_sede"]=round((($DIF)*100)/$precio_b,2);
+                                                                                                 }
+
+                                                                                                 if($value["precio_venta_unidad_blister"]!=NULL){
+
+                                                                                                        $precio_u=(int)$value["precio_venta_unidad_blister"];
+                                                                                                        $act_dat["precio_mayoreo_sede"]=$value["precio_venta_unidad_blister"];
+                                                                                                        $DIF=(int)$value["precio_venta_unidad_blister"]-$dts[0]->precio_compra_unidad;
+                                                                                                        $act_dat["porcentaje_ganancia_sede_unidad"]=round((($DIF)*100)/$precio_u,2);
+                                                                                                 }
+                                                                                                 //ACTUALIZAR CANTIDAD DE PRODUCTOS 
+                                                                                                 //UNIDADES BLISTER UNIDAD
+                                                                                                     if($value["unidades_por_blister"]!=null && $value["unidades_por_caja"]!=null){
+                                                                                                         $act_dat["cantidad_existencias"]=floor(($value["total"]/$value["unidades_por_blister"])/$value["unidades_por_caja"]);
+                                                                                                     }else{
+                                                                                                         $act_dat["cantidad_existencias"]=floor(($value["total"]/$dts[0]->unidades_por_blister)/$dts[0]->unidades_por_caja);
+                                                                                                     }
+
+
+                                                                                                     if($value["unidades_por_blister"]!=null){
+                                                                                                         $act_dat["cantidad_existencias_blister"]=floor($value["total"]/$value["unidades_por_blister"]);
+
+                                                                                                     }else{
+                                                                                                         $act_dat["cantidad_existencias_blister"]=floor($value["total"]/$dts[0]->unidades_por_blister);
+
+                                                                                                     }
+
+                                                                                                     $act_dat["cantidad_existencias_unidades"]=$value["total"];
+
+                                                                                                     $act_dat["estado_producto_sede"]="1";
+
+                                                                                                     $act_dat["estado_inventario"]="activo";
+
+                                                                                                 if(count($act_dat)>0){
+                                                                                                         //var_dump($act_dat);
+                                                                                                         //echo "=======";
+                                                                                                         DB::table("detalle_inventarios")
+                                                                                                               ->where("id","=",$dts[0]->id)  
+                                                                                                               ->update($act_dat);
+
+                                                                                                               if($act_dat["cantidad_existencias_unidades"]!=null){
+                                                                                                                  DB::table('movimientos_inventario')
+                                                                                                                  ->insertGetId(["fk_id_det_inventario"=>$dts[0]->id,
+                                                                                                                  "habia"=>"0",
+                                                                                                                  "fk_id_usuario"=>$datos->datos->id_usuario,    
+                                                                                                                  "tipo"=>"AJUSTE",
+                                                                                                                  "cantidad"=>$act_dat["cantidad_existencias_unidades"],
+                                                                                                                  "quedan"=>$act_dat["cantidad_existencias_unidades"],
+                                                                                                                  "created_at"=>$datos->datos->hora_cliente,
+                                                                                                                  "updated_at"=>$datos->datos->hora_cliente,    
+                                                                                                                  "observaciones"=>"AJUSTE DE INVENTARIO UNIDADES TOTALES"]);    
+                                                                                                               }
                                                                                                  }
 
 
-                                                                                                 if(array_key_exists("precio_venta_sede",$act_dat)!=NULL){
-                                                                                                     $act["precio_venta"]=$act_dat["precio_venta_sede"];
+                                                                                                     $act=[];
+                                                                                                     if($value["unidades_por_caja"]!=null){
 
-                                                                                                     $diff=(int)$value["precio_venta"]-$dts[0]->precio_compra;    
+                                                                                                           $act["precio_compra_blister"]=round($dts[0]->precio_compra/$value["unidades_por_caja"],2);
+                                                                                                           $act["unidades_por_caja"]=$value["unidades_por_caja"];
+
+                                                                                                     }
+
+                                                                                                     if($value["unidades_por_blister"]!=null){
+                                                                                                         $act["unidades_por_blister"]=$value["unidades_por_blister"]; 
+
+                                                                                                         $act["precio_compra_unidad"]=round(($dts[0]->precio_compra/$value["unidades_por_caja"])/$value["unidades_por_blister"],2); 
+                                                                                                     }
 
 
-                                                                                                     $act["porcentaje_ganancia"]=round(($diff*100)/$value["precio_venta"],2);
+                                                                                                     if(array_key_exists("precio_venta_sede",$act_dat)!=NULL){
+                                                                                                         $act["precio_venta"]=$act_dat["precio_venta_sede"];
+
+                                                                                                         $diff=(int)$value["precio_venta"]-$dts[0]->precio_compra;    
+
+
+                                                                                                         $act["porcentaje_ganancia"]=round(($diff*100)/$value["precio_venta"],2);
+                                                                                                      }
+
+                                                                                                      if(array_key_exists("precio_venta_blister_sede",$act_dat)){
+
+                                                                                                         $act["precio_venta_blister"]=$act_dat["precio_venta_blister_sede"];
+
+                                                                                                         $diff=(int)$value["precio_venta_blister"]-$dts[0]->precio_compra_blister;    
+
+
+                                                                                                         $act["porcentaje_ganancia_blister"]=round(($diff*100)/$value["precio_venta_blister"],2);
+
+                                                                                                      }
+
+                                                                                                      if(array_key_exists("precio_mayoreo_sede",$act_dat)){
+
+                                                                                                          $act["precio_mayoreo"]=$act_dat["precio_mayoreo_sede"];
+
+                                                                                                          $diff=(int)$value["precio_venta_unidad_blister"]-$dts[0]->precio_compra_unidad;    
+
+
+                                                                                                          $act["porcentaje_ganancia_unidad"]=round(($diff*100)/$value["precio_venta_unidad_blister"],2);
+                                                                                                      }
+
+
+
+                                                                                                     if(count($act)>0){
+
+                                                                                                         DB::table("productos")
+                                                                                                             ->where("id","=",$dts[0]->fk_id_producto)
+                                                                                                             ->update($act);
+                                                                                                      }
+
+
+
+
+
                                                                                                   }
+                                                                                       }
+                                                                                         //fin insertar movimientos
+                                                                                }
+                                                                                else{
+                                                                                    //CODIGO NO EXISTE
+                                                                                    $arr_no_existe[$ne]=
+                                                                                                        [
+                                                                                                         "codigo_producto"=>$value["codigo_producto"],
+                                                                                                        
+                                                                                                         "precio_venta"=>$value["precio_venta"],
+                                                                                                         "precio_venta_blister"=>$value["precio_venta_blister"],
+                                                                                                         "precio_venta_unidad_blister"=>$value["precio_venta_unidad_blister"],
+                                                                                                         "total"=>$value["total"]
+                                                                                                        ];
 
-                                                                                                  if(array_key_exists("precio_venta_blister_sede",$act_dat)){
-
-                                                                                                     $act["precio_venta_blister"]=$act_dat["precio_venta_blister_sede"];
-
-                                                                                                     $diff=(int)$value["precio_venta_blister"]-$dts[0]->precio_compra_blister;    
-
-
-                                                                                                     $act["porcentaje_ganancia_blister"]=round(($diff*100)/$value["precio_venta_blister"],2);
-
-                                                                                                  }
-
-                                                                                                  if(array_key_exists("precio_mayoreo_sede",$act_dat)){
-
-                                                                                                      $act["precio_mayoreo"]=$act_dat["precio_mayoreo_sede"];
-
-                                                                                                      $diff=(int)$value["precio_venta_unidad_blister"]-$dts[0]->precio_compra_unidad;    
-
-
-                                                                                                      $act["porcentaje_ganancia_unidad"]=round(($diff*100)/$value["precio_venta_unidad_blister"],2);
-                                                                                                  }
-
-
-
-                                                                                                 if(count($act)>0){
-
-                                                                                                     DB::table("productos")
-                                                                                                         ->where("id","=",$dts[0]->fk_id_producto)
-                                                                                                         ->update($act);
-                                                                                                  }
-
-
-
-
-
-                                                                                              }
-                                                                                   }
-                                                                                     //fin insertar movimientos
+                                                                                    $ne++;
+                                                                                }
                                                                             }
-                                                                            else{
-                                                                                //CODIGO NO EXISTE
-                                                                                $arr_no_existe[$ne]=
-                                                                                                    [
-                                                                                                     "codigo_producto"=>$value["codigo_producto"],
-                                                                                                    
-                                                                                                     "precio_venta"=>$value["precio_venta"],
-                                                                                                     "precio_venta_blister"=>$value["precio_venta_blister"],
-                                                                                                     "precio_venta_unidad_blister"=>$value["precio_venta_unidad_blister"],
-                                                                                                     "total"=>$value["total"]
-                                                                                                    ];
 
-                                                                                $ne++;
-                                                                            }
+                                                                       }
 
-
-
-                                                                    }
+                                                                   }
+                                                                   
                                                             }       
                                                             
                                                             Excel::create("NoExisten", function($excel) use($arr_no_existe){
@@ -1790,7 +1661,7 @@ class ImportarController extends Controller
                                                             })->store('xls', substr(base_path(),0,-8)."archivos/exportacion/excel");   
 
 
-                                                             echo json_encode(["mensaje"=>"Inventario ajustado ","respuesta"=>true,"no_existen"=>"archivos/exportacion/excel/NoExisten.xls"]);
+                                                            echo json_encode(["mensaje"=>"Inventario ajustado ","respuesta"=>true,"no_existen"=>"archivos/exportacion/excel/NoExisten.xls"]);
 
                                         }else{
                                             echo json_encode(["respuesta"=>false,"mensaje"=>"Por favor selecciona una sede para reajustar el inventario"]);  
@@ -1817,6 +1688,509 @@ class ImportarController extends Controller
         }
         else{
             echo "Archivo ".$datos->datos->nombre_archivo." no existe";
+        }  
+    }
+    public function importar_xls_ftp_get($sede,$id_usuario,$nombre_archivo,$tipo_importacion) {
+        
+        //$des=substr(base_path(),0,-8).trim("archivos/sftp/ ");  
+        $des=substr(base_path(),0,-8).trim("ftp/ ");//en el servidor funcion con el '/'  
+        $fecha_formato=Date::now(new DateTimeZone('America/Bogota'));
+        $hora_cliente=$fecha_formato->format("Y-m-d H:i:s");
+        
+        
+        $ruta=trim($des).$nombre_archivo;
+        //echo $ruta; 
+        if(file_exists($ruta)){
+               
+            Excel::load($ruta,function($reader)use($sede,$id_usuario,$tipo_importacion,$hora_cliente,$ruta){
+                                                   
+                $arr=$reader->toArray();
+                //var_dump($arr);
+                switch ($tipo_importacion) {
+                      case "ajustar_inventario_sede":
+
+                                        if($sede!="0" && $sede!="--"){
+                                            ini_set('max_execution_time', 600000); //900 seconds = 5 minutes
+                                            //linea para impedir error de memoria
+                                            ini_set('memory_limit', '-1'); 
+                                        
+                                                $prO=DB::table('productos')
+                                                                ->where("estado_producto","=","1")
+                                                                ->get();
+
+
+
+                                                            $arr_ins=[];
+                                                            $i=0;
+                                                            $esta=false;
+                                                            $new_arr=[];
+                                                            $arr_no_existe=[];
+                                                            $ne=0;
+                                                            if(count($arr)<100){
+                                                                $div_l=ceil(count($arr)/10);
+                                                            }else{
+                                                                $div_l=ceil(count($arr)/100);
+                                                            }
+                                                            //echo $div_l;
+                                                            $lote_productos_excel = array_chunk($arr, $div_l);
+                                                            if(count($arr)>0){
+                                                                   foreach ($lote_productos_excel as $key => $valor) {
+                                                                        foreach ($valor as $key => $value) {
+
+                                                                            if(array_key_exists("codigo_producto",$value) && $value["codigo_producto"]!=NULL){
+                                                                                 $dt=DB::table('productos')
+                                                                                    ->where("codigo_producto","=",$value["codigo_producto"])
+                                                                                    ->orwhere("codigo_distribuidor","=",$value["codigo_producto"])
+                                                                                    ->get(); 
+
+                                                                                if(count($dt)>0){
+                                                                                     //BUSCAR EN SEDE
+                                                                                     $dts=DB::table("detalle_inventarios")
+                                                                                             ->join("productos","productos.id","=","detalle_inventarios.fk_id_producto")
+                                                                                            ->where([
+                                                                                                ["detalle_inventarios.fk_id_producto","=",$dt[0]->id],
+                                                                                                ["detalle_inventarios.fk_id_sede","=",$sede]
+                                                                                                ])
+                                                                                             ->select("detalle_inventarios.id",
+                                                                                                    'detalle_inventarios.fk_id_producto',
+                                                                                                     "productos.unidades_por_caja",
+                                                                                                     "productos.unidades_por_blister",
+                                                                                                     "detalle_inventarios.cantidad_existencias",
+                                                                                                     "detalle_inventarios.cantidad_existencias_unidades",
+                                                                                                     "detalle_inventarios.cantidad_existencias_blister",
+                                                                                                     "detalle_inventarios.precio_venta_sede",
+                                                                                                     "detalle_inventarios.precio_venta_blister_sede",
+                                                                                                     "detalle_inventarios.precio_mayoreo_sede",
+                                                                                                     "productos.precio_compra",
+                                                                                                     "productos.precio_compra_blister",
+                                                                                                     "productos.precio_compra_unidad",
+                                                                                                     "productos.precio_venta",
+                                                                                                     "productos.precio_venta_blister",
+                                                                                                     "productos.precio_mayoreo",
+                                                                                                     "productos.tipo_venta_producto")
+                                                                                            ->get();
+                                                                                        
+                                                                                        //DATOS A ACTUALIZAR    
+                                                                                       if(count($dts)>0){
+                                                                                            $act_detalle=[];
+                                                                                             $act_producto=[];
+                                                                                             $ia=0;
+
+                                                                                            //valido precios venta
+                                                                                            if($value["precio_venta"]!=NULL){
+
+                                                                                                     if((int)$dts[0]->precio_venta==0){
+
+                                                                                                         $precio=1;
+
+                                                                                                     }else{
+
+                                                                                                         $precio=(int)$dts[0]->precio_venta;
+
+                                                                                                     }
+
+                                                                                                     $act_detalle["precio_venta_sede"]=$value["precio_venta"];
+                                                                                                     $DIF=(int)$value["precio_venta"]-$dts[0]->precio_compra;
+                                                                                                     $act_detalle["porcentaje_ganancia_sede"]=round((($DIF)*100)/$precio,2);
+
+
+                                                                                             }   
+
+                                                                                             if($value["precio_venta_blister"]!=NULL){
+                                                                                                     if((int)$dts[0]->precio_venta_blister==0){
+                                                                                                         $precio_b=1;
+                                                                                                     }else{
+                                                                                                         $precio_b=(int)$dts[0]->precio_venta_blister;
+                                                                                                     }
+                                                                                                      $act_detalle["precio_venta_blister_sede"]=$value["precio_venta_blister"];
+                                                                                                      $DIF=(int)$value["precio_venta_blister"]-$dts[0]->precio_compra_blister;
+                                                                                                      $act_detalle["porcentaje_ganancia_blister_sede"]=round((($DIF)*100)/$precio_b,2);
+                                                                                             }
+
+                                                                                             if($value["precio_venta_unidad_blister"]!=NULL){
+                                                                                                     if((int)$dts[0]->precio_mayoreo_sede==0){
+                                                                                                         $precio_u=1;
+
+                                                                                                     }else{
+                                                                                                         $precio_u=(int)$dts[0]->precio_mayoreo_sede;
+                                                                                                     } 
+
+                                                                                                    $act_detalle["precio_mayoreo_sede"]=$value["precio_venta_unidad_blister"];
+                                                                                                    $DIF=(int)$value["precio_venta_unidad_blister"]-$dts[0]->precio_compra_unidad;
+                                                                                                    $act_detalle["porcentaje_ganancia_sede_unidad"]=round((($DIF)*100)/$precio_u,2);
+                                                                                             }
+
+
+                                                                                                  //ACTUALIZAR precio DE PRODUCTOS 
+                                                                                             //valido precios venta    
+                                                                                             if(count($act_detalle)>0){
+                                                                                                     DB::table("detalle_inventarios")
+                                                                                                           ->where("id","=",$dts[0]->id)  
+                                                                                                           ->update($act_detalle);
+                                                                                             }
+                                                                                                
+
+                                                                                              if($value["unidades_por_caja"]!=null){
+
+                                                                                                       $act_producto["unidades_por_caja"]=$value["unidades_por_caja"];
+
+                                                                                                       $act_producto["precio_compra_blister"]=round($dts[0]->precio_compra/$value["unidades_por_caja"],2);
+
+                                                                                              }
+
+                                                                                              if($value["unidades_por_blister"]!=null){
+
+                                                                                                 $act_producto["unidades_por_blister"]=$value["unidades_por_blister"]; 
+
+                                                                                                 $act_producto["precio_compra_unidad"]=round(($dts[0]->precio_compra/$value["unidades_por_caja"])/$value["unidades_por_blister"],2); 
+                                                                                              }
+
+
+                                                                                                  if(array_key_exists("precio_venta_sede",$act_detalle)){
+
+                                                                                                     $act_producto["precio_venta"]=$act_detalle["precio_venta_sede"];
+
+                                                                                                     $diff=(int)$act_detalle["precio_venta_sede"]-$dts[0]->precio_compra;    
+
+
+                                                                                                     $act_producto["porcentaje_ganancia"]=round(($diff*100)/$act_detalle["precio_venta_sede"],2);
+
+                                                                                                  }
+
+                                                                                                  if(array_key_exists("precio_venta_blister_sede",$act_detalle)){
+
+                                                                                                     $act_producto["precio_venta_blister"]=$act_detalle["precio_venta_blister_sede"];
+
+                                                                                                     $diff=(int)$act_detalle["precio_venta_blister_sede"]-$dts[0]->precio_compra_blister;    
+
+
+                                                                                                     $act_producto["porcentaje_ganancia_blister"]=round(($diff*100)/$value["precio_venta_blister"],2);
+
+                                                                                                  }
+
+                                                                                                  if(array_key_exists("precio_mayoreo_sede",$act_detalle)){
+
+                                                                                                      $act_producto["precio_mayoreo"]=$act_detalle["precio_mayoreo_sede"];
+
+                                                                                                      $diff=(int)$value["precio_venta_unidad_blister"]-$dts[0]->precio_compra_unidad;    
+
+
+                                                                                                      $act_producto["porcentaje_ganancia_unidad"]=round(($diff*100)/$value["precio_venta_unidad_blister"],2);
+                                                                                                  }
+
+                                                                                                  if(count($act_producto)>0){
+                                                                                                        
+                                                                                                     DB::table("productos")
+                                                                                                         ->where("id","=",$dts[0]->fk_id_producto)
+                                                                                                         ->update($act_producto);
+                                                                                                  }
+
+                                                                                                 //VALIDO SI EXISTEN EN LA SEDE AL COMPROBAR SI HAY O
+                                                                                                 // NO REGISTROS EN LA CONSULTA   
+
+                                                                                                   $dts=DB::table("detalle_inventarios")
+                                                                                                      ->join("productos","productos.id","=","detalle_inventarios.fk_id_producto")
+                                                                                                     ->where([
+                                                                                                        ["detalle_inventarios.fk_id_producto","=",$dt[0]->id],
+                                                                                                        ["detalle_inventarios.fk_id_sede","=",$sede]
+                                                                                                         ])
+                                                                                                      ->select("detalle_inventarios.id",
+                                                                                                         'detalle_inventarios.fk_id_producto',
+                                                                                                          "productos.unidades_por_caja",
+                                                                                                          "productos.unidades_por_blister",
+                                                                                                          "detalle_inventarios.cantidad_existencias",
+                                                                                                          "detalle_inventarios.cantidad_existencias_unidades",
+                                                                                                          "detalle_inventarios.cantidad_existencias_blister",
+                                                                                                          "detalle_inventarios.precio_venta_sede",
+                                                                                                          "detalle_inventarios.precio_venta_blister_sede",
+                                                                                                          "detalle_inventarios.precio_mayoreo_sede",
+                                                                                                          "productos.precio_compra",
+                                                                                                          "productos.precio_compra_blister",
+                                                                                                          "productos.precio_compra_unidad",
+                                                                                                          "productos.precio_venta",
+                                                                                                          "productos.precio_venta_blister",
+                                                                                                          "productos.precio_mayoreo",
+                                                                                                          "productos.tipo_venta_producto")
+                                                                                                 ->get();     
+
+                                                                                             //BLOQUE DE ACTUALIZACION DE CANTIDADES 
+                                                                                                 if(count($dts)==0){
+
+                                                                                                      $cantidades=[];
+                                                                                                        if($value["unidades_por_caja"]!=null && $value["unidades_por_blister"]!=null){
+                                                                                                                 $cantidades["cantidad_existencias"]=floor($value["total"]/$value["unidades_por_blister"])/$value["unidades_por_caja"];  
+                                                                                                            }else{
+                                                                                                                 $cantidades["cantidad_existencias"]=floor($value["total"]/$dts[0]->unidades_por_blister)/$dts[0]->unidades_por_caja;  
+                                                                                                            }     
+
+                                                                                                           if($value["unidades_por_blister"]!=null){
+                                                                                                             $cantidades["cantidad_existencias_blister"]=floor((int)$value["total"]/(int)$value["unidades_por_blister"]); 
+                                                                                                           }else{
+                                                                                                                $cantidades["cantidad_existencias_blister"]=floor((int)$value["total"]/(int)$dts[0]->unidades_por_blister);  
+                                                                                                           }
+
+
+                                                                                                           if($value["total"]==null){
+                                                                                                             $value["total"]=0;
+                                                                                                           } 
+                                                                                                           $cantidades["cantidad_existencias_unidades"]=$value["total"];
+                                                                                                           $cantidades["estado_inventario"]="activo";
+
+
+                                                                                                      $id_dt=DB::table('detalle_inventarios')
+                                                                                                          ->insertGetId(["fk_id_producto"=>$dts[0]->id,
+                                                                                                          "fk_id_sede"=>$sede,
+                                                                                                          "fecha_caducidad"=>"0000-00-00 00:00:00",
+                                                                                                          "cantidad_existencias"=>$cantidades["cantidad_existencias"],
+                                                                                                          "cantidad_existencias_blister"=>$cantidades["cantidad_existencias_blister"],   
+                                                                                                          "cantidad_existencias_unidades"=>$cantidades["cantidad_existencias_unidades"],
+                                                                                                           "estado_inventario"=>$cantidades["estado_inventario"],   
+                                                                                                          "minimo_inventario_sede"=>0,
+                                                                                                          "precio_venta_sede"=>$value["precio_venta"],
+                                                                                                          "precio_venta_blister_sede"=>$value["precio_venta_blister"],  
+                                                                                                          "precio_mayoreo_sede"=>$value["precio_venta_unidad_blister"],   
+                                                                                                          "created_at"=>$hora_cliente,
+                                                                                                          "updated_at"=>$hora_cliente]);
+
+
+
+
+
+
+                                                                                                         if($cantidades["cantidad_existencias_unidades"]!=null){
+
+                                                                                                             DB::table('movimientos_inventario')
+                                                                                                                  ->insertGetId(["fk_id_det_inventario"=>$id_dt,
+                                                                                                                  "habia"=>"0",
+                                                                                                                  "fk_id_usuario"=>$id_usuario,    
+                                                                                                                  "tipo"=>"AJUSTE",
+                                                                                                                  "cantidad"=>$cantidades["cantidad_existencias_unidades"],
+                                                                                                                  "quedan"=>$cantidades["cantidad_existencias_unidades"],
+                                                                                                                  "created_at"=>$hora_cliente,
+                                                                                                                  "updated_at"=>$hora_cliente,    
+                                                                                                                  "observaciones"=>"AJUSTE DE INVENTARIO"]);
+
+                                                                                                                  DB::table('detalle_inventarios')
+                                                                                                                       ->where("id","=",$id_dt)
+                                                                                                                       ->update(["estado_producto_sede"=>"1","estado_inventario"=>"activo"]);
+
+                                                                                                         } 
+
+
+
+                                                                                                 }
+                                                                                                  else{
+                                                                                                     //producto ya existe actualizo existencias en sede
+
+
+                                                                                                      $dts=DB::table("detalle_inventarios")
+                                                                                                      ->join("productos","productos.id","=","detalle_inventarios.fk_id_producto")
+                                                                                                     ->where([
+                                                                                                         ["productos.codigo_producto","=",$dt[0]->codigo_producto],
+                                                                                                         ["detalle_inventarios.fk_id_producto","=",$dt[0]->id],
+                                                                                                         ["detalle_inventarios.fk_id_sede","=",$sede]
+                                                                                                         ])
+                                                                                                      ->select("detalle_inventarios.id",
+                                                                                                             'detalle_inventarios.fk_id_producto',
+                                                                                                              "productos.unidades_por_caja",
+                                                                                                              "productos.unidades_por_blister",
+                                                                                                              "detalle_inventarios.cantidad_existencias",
+                                                                                                              "detalle_inventarios.cantidad_existencias_unidades",
+                                                                                                              "detalle_inventarios.cantidad_existencias_blister",
+                                                                                                              "detalle_inventarios.precio_venta_sede",
+                                                                                                              "detalle_inventarios.precio_venta_blister_sede",
+                                                                                                              "detalle_inventarios.precio_mayoreo_sede",
+                                                                                                               "productos.precio_compra",
+                                                                                                              "productos.precio_compra_blister",
+                                                                                                              "productos.precio_compra_unidad",
+                                                                                                              "productos.precio_venta",
+                                                                                                              "productos.precio_venta_blister",
+                                                                                                              "productos.precio_mayoreo",
+                                                                                                              "productos.tipo_venta_producto")
+                                                                                                     ->get();        
+                                                                                                     $act_dat=[];
+                                                                                                 if($value["precio_venta"]!=NULL){
+
+
+                                                                                                         $precio=$value["precio_venta"];   
+                                                                                                         $act_dat["precio_venta_sede"]=$value["precio_venta"];
+                                                                                                         $DIF=(int)$value["precio_venta"]-$dts[0]->precio_compra;        
+                                                                                                         $act_dat["porcentaje_ganancia_sede"]=round((($DIF)*100)/$precio,2);
+
+
+                                                                                                 }   
+
+                                                                                                 if($value["precio_venta_blister"]!=NULL){
+
+                                                                                                          $precio_b=$value["precio_venta_blister"];
+                                                                                                          $act_dat["precio_venta_blister_sede"]=$value["precio_venta_blister"];
+                                                                                                          $DIF=(int)$value["precio_venta_blister"]-$dts[0]->precio_compra_blister;
+                                                                                                          $act_dat["porcentaje_ganancia_blister_sede"]=round((($DIF)*100)/$precio_b,2);
+                                                                                                 }
+
+                                                                                                 if($value["precio_venta_unidad_blister"]!=NULL){
+
+                                                                                                        $precio_u=(int)$value["precio_venta_unidad_blister"];
+                                                                                                        $act_dat["precio_mayoreo_sede"]=$value["precio_venta_unidad_blister"];
+                                                                                                        $DIF=(int)$value["precio_venta_unidad_blister"]-$dts[0]->precio_compra_unidad;
+                                                                                                        $act_dat["porcentaje_ganancia_sede_unidad"]=round((($DIF)*100)/$precio_u,2);
+                                                                                                 }
+                                                                                                 //ACTUALIZAR CANTIDAD DE PRODUCTOS 
+                                                                                                 //UNIDADES BLISTER UNIDAD
+                                                                                                     if($value["unidades_por_blister"]!=null && $value["unidades_por_caja"]!=null){
+                                                                                                         $act_dat["cantidad_existencias"]=floor(($value["total"]/$value["unidades_por_blister"])/$value["unidades_por_caja"]);
+                                                                                                     }else{
+                                                                                                         $act_dat["cantidad_existencias"]=floor(($value["total"]/$dts[0]->unidades_por_blister)/$dts[0]->unidades_por_caja);
+                                                                                                     }
+
+
+                                                                                                     if($value["unidades_por_blister"]!=null){
+                                                                                                         $act_dat["cantidad_existencias_blister"]=floor($value["total"]/$value["unidades_por_blister"]);
+
+                                                                                                     }else{
+                                                                                                         $act_dat["cantidad_existencias_blister"]=floor($value["total"]/$dts[0]->unidades_por_blister);
+
+                                                                                                     }
+
+                                                                                                     $act_dat["cantidad_existencias_unidades"]=$value["total"];
+
+                                                                                                     $act_dat["estado_producto_sede"]="1";
+
+                                                                                                     $act_dat["estado_inventario"]="activo";
+
+                                                                                                 if(count($act_dat)>0){
+                                                                                                         //var_dump($act_dat);
+                                                                                                         //echo "=======";
+                                                                                                         DB::table("detalle_inventarios")
+                                                                                                               ->where("id","=",$dts[0]->id)  
+                                                                                                               ->update($act_dat);
+
+                                                                                                               if($act_dat["cantidad_existencias_unidades"]!=null){
+                                                                                                                  DB::table('movimientos_inventario')
+                                                                                                                  ->insertGetId(["fk_id_det_inventario"=>$dts[0]->id,
+                                                                                                                  "habia"=>"0",
+                                                                                                                  "fk_id_usuario"=>$id_usuario,    
+                                                                                                                  "tipo"=>"AJUSTE",
+                                                                                                                  "cantidad"=>$act_dat["cantidad_existencias_unidades"],
+                                                                                                                  "quedan"=>$act_dat["cantidad_existencias_unidades"],
+                                                                                                                  "created_at"=>$hora_cliente,
+                                                                                                                  "updated_at"=>$hora_cliente,    
+                                                                                                                  "observaciones"=>"AJUSTE DE INVENTARIO UNIDADES TOTALES"]);    
+                                                                                                               }
+                                                                                                 }
+
+
+                                                                                                     $act=[];
+                                                                                                     if($value["unidades_por_caja"]!=null){
+
+                                                                                                           $act["precio_compra_blister"]=round($dts[0]->precio_compra/$value["unidades_por_caja"],2);
+                                                                                                           $act["unidades_por_caja"]=$value["unidades_por_caja"];
+
+                                                                                                     }
+
+                                                                                                     if($value["unidades_por_blister"]!=null){
+                                                                                                         $act["unidades_por_blister"]=$value["unidades_por_blister"]; 
+
+                                                                                                         $act["precio_compra_unidad"]=round(($dts[0]->precio_compra/$value["unidades_por_caja"])/$value["unidades_por_blister"],2); 
+                                                                                                     }
+
+
+                                                                                                     if(array_key_exists("precio_venta_sede",$act_dat)!=NULL){
+                                                                                                         $act["precio_venta"]=$act_dat["precio_venta_sede"];
+
+                                                                                                         $diff=(int)$value["precio_venta"]-$dts[0]->precio_compra;    
+
+
+                                                                                                         $act["porcentaje_ganancia"]=round(($diff*100)/$value["precio_venta"],2);
+                                                                                                      }
+
+                                                                                                      if(array_key_exists("precio_venta_blister_sede",$act_dat)){
+
+                                                                                                         $act["precio_venta_blister"]=$act_dat["precio_venta_blister_sede"];
+
+                                                                                                         $diff=(int)$value["precio_venta_blister"]-$dts[0]->precio_compra_blister;    
+
+
+                                                                                                         $act["porcentaje_ganancia_blister"]=round(($diff*100)/$value["precio_venta_blister"],2);
+
+                                                                                                      }
+
+                                                                                                      if(array_key_exists("precio_mayoreo_sede",$act_dat)){
+
+                                                                                                          $act["precio_mayoreo"]=$act_dat["precio_mayoreo_sede"];
+
+                                                                                                          $diff=(int)$value["precio_venta_unidad_blister"]-$dts[0]->precio_compra_unidad;    
+
+
+                                                                                                          $act["porcentaje_ganancia_unidad"]=round(($diff*100)/$value["precio_venta_unidad_blister"],2);
+                                                                                                      }
+
+
+
+                                                                                                     if(count($act)>0){
+
+                                                                                                         DB::table("productos")
+                                                                                                             ->where("id","=",$dts[0]->fk_id_producto)
+                                                                                                             ->update($act);
+                                                                                                      }
+
+
+
+
+
+                                                                                                  }
+                                                                                       }
+                                                                                         //fin insertar movimientos
+                                                                                }
+                                                                                else if($value["codigo_producto"]!=NULL){
+                                                                                    //CODIGO NO EXISTE
+                                                                                    $arr_no_existe[$ne]=
+                                                                                                        [
+                                                                                                         "codigo_producto"=>$value["codigo_producto"],
+                                                                                                        
+                                                                                                         "precio_venta"=>$value["precio_venta"],
+                                                                                                         "precio_venta_blister"=>$value["precio_venta_blister"],
+                                                                                                         "precio_venta_unidad_blister"=>$value["precio_venta_unidad_blister"],
+                                                                                                         "total"=>$value["total"]
+                                                                                                        ];
+
+                                                                                    $ne++;
+                                                                                }
+                                                                            }
+
+                                                                       }
+
+                                                                   }
+                                                                   
+                                                            }       
+                                                            
+                                                            Excel::create("NoExisten", function($excel) use($arr_no_existe){
+
+                                                                         $excel->sheet('no_existen',function($sheet) use($arr_no_existe){
+                                                                                      $sheet->fromArray($arr_no_existe);
+                                                                                });
+                                                            })->store('xls', substr(base_path(),0,-8)."archivos/exportacion/excel");   
+
+
+                                                            echo json_encode(["mensaje"=>"Inventario ajustado ","respuesta"=>true,"no_existen"=>"archivos/exportacion/excel/NoExisten.xls"]);
+
+                                        }else{
+                                            echo json_encode(["respuesta"=>false,"mensaje"=>"Por favor selecciona una sede para reajustar el inventario"]);  
+                                        }
+
+                                          
+
+                                        break;                     
+                    
+                       default:
+                            echo json_encode(["respuesta"=>false,"mensaje"=>"Selecciona una opcion"]);
+                            break;                                                        
+                }
+            });               
+            
+        }
+        else{
+            echo "Archivo ".$nombre_archivo." no existe";
         }  
     }
    

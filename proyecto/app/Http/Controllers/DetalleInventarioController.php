@@ -58,8 +58,8 @@ class DetalleInventarioController extends Controller
             "fecha_caducidad"=>$datos->datos->fecha_caducidad,
             "cantidad_existencias"=>$datos->datos->cantidad_existencias,
             "cantidad_existencias_unidades"=>$datos->datos->cantidad_existencias*$pr[0]->unidades_por_caja,
-             "cantidad_devueltas"=>$datos->datos->cantidad_devueltas, 
-             "created_at"=>$datos->hora_cliente,
+            "cantidad_devueltas"=>$datos->datos->cantidad_devueltas, 
+            "created_at"=>$datos->hora_cliente,
             "updated_at"=>$datos->hora_cliente,   
             "fk_id_usuario"=>$datos->datos->fk_id_usuario,
 
@@ -102,11 +102,11 @@ class DetalleInventarioController extends Controller
         //
         $di=new DetalleInventario();
         $datos=json_decode($request->get("datos"));
-
+        //var_dump($datos);
         $rr=$di->editar([
                 "updated_at"=>$datos->hora_cliente,   
                 ],[["id","=",$id]]);
-       
+        //var_dump($rr["respuesta"]);
         if($rr["respuesta"]==true){
             
             if($datos->datos->tipo_entrada_inventario=="caja"){
@@ -134,6 +134,7 @@ class DetalleInventarioController extends Controller
                                 ->where("detalle_inventarios.id","=",$id)
                                 ->increment('cantidad_existencias_unidades',((int)$datos->datos->cantidad_existencias*(int)$pro[0]->unidades_por_caja));
 
+
                             $quedan=DB::table("detalle_inventarios")
                                                              ->join("productos","productos.id","=","detalle_inventarios.fk_id_producto")
                                                              ->select("detalle_inventarios.id",
@@ -159,6 +160,12 @@ class DetalleInventarioController extends Controller
                                 ->update([
                                         "cantidad_existencias_blister"=>floor($quedan[0]->cantidad_existencias_unidades/$quedan[0]->unidades_por_blister),
                                           "cantidad_existencias"=>floor(floor($quedan[0]->cantidad_existencias_unidades/$quedan[0]->unidades_por_blister))/$quedan[0]->unidades_por_caja,
+                                          "precio_venta_sede"=>$datos->datos->precio_venta_caja,
+                                          "precio_venta_blister_sede"=>$datos->datos->precio_venta_blister,
+                                          "precio_mayoreo_sede"=>$datos->datos->precio_venta_unidad,
+                                          "porcentaje_ganancia_sede"=>"",
+                                          "porcentaje_ganancia_blister_sede"=>"",
+                                          "porcentaje_ganancia_sede_unidad"=>"",
                                           "estado_producto_sede"=>"1",
                                           "estado_inventario"=>"activo"
                                       ]);
@@ -166,7 +173,7 @@ class DetalleInventarioController extends Controller
                                                                
 
                             DB::table('productos')
-                             ->where("id","=",$id)
+                             ->where("id","=",$pro[0]->id)
                              ->update(["estado_producto"=>"1"]);                                                
                      }
                      else if($pro[0]->tipo_venta_producto=="PorUnidad"){
@@ -176,9 +183,16 @@ class DetalleInventarioController extends Controller
 
                             DB::table('detalle_inventarios')
                              ->where("id","=",$id)
-                             ->update(["estado_producto_sede"=>"1","estado_inventario"=>"activo"]);
+                             ->update(["estado_producto_sede"=>"1",
+                                "estado_inventario"=>"activo",
+                                "precio_venta_sede"=>$datos->datos->precio_venta_caja,
+                                "precio_venta_blister_sede"=>$datos->datos->precio_venta_blister,
+                                "precio_mayoreo_sede"=>$datos->datos->precio_venta_unidad,
+                                "porcentaje_ganancia_sede"=>"",
+                                "porcentaje_ganancia_blister_sede"=>"",
+                                "porcentaje_ganancia_sede_unidad"=>""]);
 
-                             DB::table('detalle_inventarios')
+                            DB::table('detalle_inventarios')
                                  ->where("detalle_inventarios.id","=",$id)
                                  ->increment('cantidad_existencias',(int)$datos->datos->cantidad_existencias);
 
@@ -194,27 +208,30 @@ class DetalleInventarioController extends Controller
                      else if($pro[0]->tipo_venta_producto=="CajaBlister"){
                                 DB::table('detalle_inventarios')
                                     ->where("detalle_inventarios.id","=",$id)
-                                    ->increment('cantidad_existencias_unidades',(int)$datos->datos->cantidad_existencias*$pro[0]->unidades_por_caja);
+                                    ->increment('cantidad_existencias_unidades',((int)$datos->datos->cantidad_existencias*$pro[0]->unidades_por_caja)*(int)$pro[0]->unidades_por_blister);
+                                    //var_dump(((int)$datos->datos->cantidad_existencias*$pro[0]->unidades_por_caja)*(int)$pro[0]->unidades_por_blister);
 
                                 $quedan=DB::table("detalle_inventarios")
                                                              ->join("productos","productos.id","=","detalle_inventarios.fk_id_producto")
                                                              ->select("detalle_inventarios.id",
-                                                                                    'detalle_inventarios.fk_id_producto',
-                                                                                    "productos.unidades_por_caja",
-                                                                                    "productos.unidades_por_blister",
-                                                                                    "detalle_inventarios.cantidad_existencias",
-                                                                                    "detalle_inventarios.cantidad_existencias_unidades",
-                                                                                    "detalle_inventarios.cantidad_existencias_blister",
-                                                                                    "detalle_inventarios.precio_venta_sede",
-                                                                                    "detalle_inventarios.precio_venta_blister_sede",
-                                                                                    "detalle_inventarios.precio_mayoreo_sede",
-                                                                                    "productos.precio_venta",
-                                                                                    "productos.precio_venta_blister",
-                                                                                    "productos.precio_mayoreo",
-                                                                                    "productos.tipo_venta_producto")
+                                                                     'detalle_inventarios.fk_id_producto',                                    "productos.unidades_por_caja",
+                                                                          "productos.unidades_por_blister",
+                                                                          "detalle_inventarios.cantidad_existencias",
+                                                                            "detalle_inventarios.cantidad_existencias_unidades",
+                                                                            "detalle_inventarios.cantidad_existencias_blister",
+                                                                            "detalle_inventarios.precio_venta_sede",
+                                                                            "detalle_inventarios.precio_venta_blister_sede",
+                                                                            "detalle_inventarios.precio_mayoreo_sede",
+                                                                            "productos.precio_venta",
+                                                                            "productos.precio_venta_blister",
+                                                                            "productos.precio_mayoreo",
+                                                                            "productos.tipo_venta_producto")
                                                                                                              
                                                                     ->where("detalle_inventarios.id","=",$id)
                                                                     ->get();     
+                                //var_dump(floor($quedan[0]->cantidad_existencias_unidades/$quedan[0]->unidades_por_blister));
+
+                                //var_dump(floor(floor($quedan[0]->cantidad_existencias_unidades/$quedan[0]->unidades_por_blister)/$quedan[0]->unidades_por_caja));                                    
                                                                     
                                 DB::table("detalle_inventarios")
                                     ->where( "id","=",$id)
@@ -222,11 +239,17 @@ class DetalleInventarioController extends Controller
                                                "cantidad_existencias_blister"=>floor($quedan[0]->cantidad_existencias_unidades/$quedan[0]->unidades_por_blister),
                                                "cantidad_existencias"=>floor(floor($quedan[0]->cantidad_existencias_unidades/$quedan[0]->unidades_por_blister)
                                                                                     /$quedan[0]->unidades_por_caja),
-                                               "estado_producto_sede"=>"1",
-                                               "estado_inventario"=>"activo"
+                                                "precio_venta_sede"=>$datos->datos->precio_venta_caja,
+                                                "precio_venta_blister_sede"=>$datos->datos->precio_venta_blister,
+                                                "precio_mayoreo_sede"=>$datos->datos->precio_venta_unidad,
+                                                "porcentaje_ganancia_sede"=>"",
+                                                "porcentaje_ganancia_blister_sede"=>"",
+                                                "porcentaje_ganancia_sede_unidad"=>"",
+                                                "estado_producto_sede"=>"1",
+                                                "estado_inventario"=>"activo"
                                             ]);                                                                                          
                                 DB::table('productos')
-                                     ->where("id","=",$id)
+                                     ->where("id","=",$pro[0]->id)
                                      ->update(["estado_producto"=>"1"]);                         
                      }
                      
@@ -254,256 +277,7 @@ class DetalleInventarioController extends Controller
                  }   
                 
             }
-            //SE COMENTA LINEAS DE VALIDACION PARA INGRESO DE UNIDADES Y BLISTER
-            /*else if($datos->datos->tipo_entrada_inventario=="unidad"){
-                
-                
-                
-                $pro=DB::table('detalle_inventarios')
-                        ->join('productos',"productos.id","=","detalle_inventarios.fk_id_producto")
-                        ->where("detalle_inventarios.id","=",$id)
-                        ->select("productos.id",
-                                 "productos.tipo_venta_producto",
-                                 "detalle_inventarios.cantidad_existencias_unidades",
-                                 "detalle_inventarios.cantidad_existencias",
-                                 "productos.unidades_por_caja",
-                                 "productos.unidades_por_blister")
-                        ->get();
-                
-                if($pro[0]->tipo_venta_producto=="Caja"){
-                            DB::table('detalle_inventarios')                
-                                ->where("id","=",$id)
-                                ->increment('cantidad_existencias_unidades',$datos->datos->cantidad_existencias);
-
-                            $quedan=DB::table("detalle_inventarios")
-                                                             ->join("productos","productos.id","=","detalle_inventarios.fk_id_producto")
-                                                             ->select("detalle_inventarios.id",
-                                                                                    'detalle_inventarios.fk_id_producto',
-                                                                                    "productos.unidades_por_caja",
-                                                                                    "productos.unidades_por_blister",
-                                                                                    "detalle_inventarios.cantidad_existencias",
-                                                                                    "detalle_inventarios.cantidad_existencias_unidades",
-                                                                                    "detalle_inventarios.cantidad_existencias_blister",
-                                                                                    "detalle_inventarios.precio_venta_sede",
-                                                                                    "detalle_inventarios.precio_venta_blister_sede",
-                                                                                    "detalle_inventarios.precio_mayoreo_sede",
-                                                                                    "productos.precio_venta",
-                                                                                    "productos.precio_venta_blister",
-                                                                                    "productos.precio_mayoreo",
-                                                                                    "productos.tipo_venta_producto")
-                                                                                                             
-                                                                    ->where("detalle_inventarios.id","=",$id)
-                                                                    ->get();     
-                                                                    
-                                 DB::table("detalle_inventarios")
-                                    ->where( "id","=",$id)
-                                    ->update(["cantidad_existencias_blister"=>floor($quedan[0]->cantidad_existencias_unidades/$quedan[0]->unidades_por_blister),
-                                              "cantidad_existencias"=>floor($quedan[0]->cantidad_existencias_unidades/$quedan[0]->unidades_por_blister)/$quedan[0]->unidades_por_caja]);
-                            
-                                $mo=new MovimientosInventario();
-                                $mo->insertar([
-                                    "fk_id_det_inventario"=>$id,
-                                    "habia"=>$pro[0]->cantidad_existencias_unidades,
-                                    "fk_id_usuario"=>$datos->datos->fk_id_usuario,
-                                    "tipo"=>$datos->datos->tipo_entrada,
-                                    "descripcion"=>$datos->datos->tipo_entrada_inventario,
-                                    "cantidad"=>(int)$datos->datos->cantidad_existencias,
-                                    "quedan"=>(int)$quedan[0]->cantidad_existencias_unidades,
-                                     "created_at"=>$datos->hora_cliente,
-                                    "updated_at"=>$datos->hora_cliente,   
-                                    "observaciones"=>"REGISTRO GENERADO AGREGAR ENTRADA INVENTARIO"
-
-                                    ]);
-                                
-                                DB::table('productos')
-                                 ->where("id","=",$pro[0]->id)
-                                 ->update(["estado_producto"=>"1"]);   
-
-                                           
-                                DB::table('detalle_inventarios')
-                                    ->where("id","=",$id)
-                                    ->update(["estado_producto_sede"=>"1","estado_inventario"=>"activo"]);
-
-                            return response()->json($rr);        
-                           
-                }
-                if($pro[0]->tipo_venta_producto=="CajaBlister"){
-                    
-                     DB::table('detalle_inventarios')                
-                        ->where("id","=",$id)
-                        ->increment('cantidad_existencias_unidades',(int)$datos->datos->cantidad_existencias);
-
-                    
-                     $quedan=DB::table("detalle_inventarios")
-                                                             ->join("productos","productos.id","=","detalle_inventarios.fk_id_producto")
-                                                             ->select("detalle_inventarios.id",
-                                                                                    'detalle_inventarios.fk_id_producto',
-                                                                                    "productos.unidades_por_caja",
-                                                                                    "productos.unidades_por_blister",
-                                                                                    "detalle_inventarios.cantidad_existencias",
-                                                                                    "detalle_inventarios.cantidad_existencias_unidades",
-                                                                                    "detalle_inventarios.cantidad_existencias_blister",
-                                                                                    "detalle_inventarios.precio_venta_sede",
-                                                                                    "detalle_inventarios.precio_venta_blister_sede",
-                                                                                    "detalle_inventarios.precio_mayoreo_sede",
-                                                                                    "productos.precio_venta",
-                                                                                    "productos.precio_venta_blister",
-                                                                                    "productos.precio_mayoreo",
-                                                                                    "productos.tipo_venta_producto")
-                                                                                                             
-                                                                    ->where("detalle_inventarios.id","=",$id)
-                                                                    ->get();     
-                                                                    
-                             
-                     DB::table("detalle_inventarios")
-                                ->where( "id","=",$id)
-                                ->update(["cantidad_existencias_blister"=>floor($quedan[0]->cantidad_existencias_unidades/$quedan[0]->unidades_por_blister),
-                                          "cantidad_existencias"=>floor($quedan[0]->cantidad_existencias_unidades/$quedan[0]->unidades_por_blister)/$quedan[0]->unidades_por_caja]);
-
-                     $mo=new MovimientosInventario();
-                     $mo->insertar([
-                                "fk_id_det_inventario"=>$id,
-                                "habia"=>$pro[0]->cantidad_existencias_unidades,
-                                "fk_id_usuario"=>$datos->datos->fk_id_usuario,
-                                "tipo"=>$datos->datos->tipo_entrada,
-                                "descripcion"=>$datos->datos->tipo_entrada_inventario,
-                                "cantidad"=>(int)$datos->datos->cantidad_existencias,
-                                "quedan"=>(int)$quedan[0]->cantidad_existencias_unidades,
-                                 "created_at"=>$datos->hora_cliente,
-                                "updated_at"=>$datos->hora_cliente,   
-                                "observaciones"=>"REGISTRO GENERADO AGREGAR ENTRADA INVENTARIO"
-
-                                ]);
-
-                     DB::table('productos')
-                        ->where("id","=",$pro[0]->id)
-                        ->update(["estado_producto"=>"1"]);   
-
-
-                     DB::table('detalle_inventarios')
-                         ->where("id","=",$id)
-                         ->update(["estado_producto_sede"=>"1","estado_inventario"=>"activo"]); 
-                    return response()->json($rr);        
-                    
-                }
-                else if($pro[0]->tipo_venta_producto=="PorUnidad"){
-                    DB::table('detalle_inventarios')                
-                        ->where("id","=",$id)
-                        ->increment('cantidad_existencias',(int)$datos->datos->cantidad_existencias);
-                    
-                    DB::table('detalle_inventarios')                
-                        ->where("id","=",$id)
-                        ->increment('cantidad_existencias_blister',(int)$datos->datos->cantidad_existencias);
-                    
-                    DB::table('detalle_inventarios')                
-                        ->where("id","=",$id)
-                        ->increment('cantidad_existencias_unidades',(int)$datos->datos->cantidad_existencias);
-                    
-                    $pro2=DB::table('detalle_inventarios')
-                            ->join('productos',"productos.id","=","detalle_inventarios.fk_id_producto")
-                            ->where("detalle_inventarios.id","=",$id)
-                             ->select("productos.id",
-                                            "detalle_inventarios.cantidad_existencias_unidades",
-                                            "detalle_inventarios.cantidad_existencias")
-                             ->get();
-
-                    DB::table('productos')
-                             ->where("id","=",$pro[0]->id)
-                             ->update(["estado_producto"=>"1"]);   
-
-                    DB::table('detalle_inventarios')
-                             ->where("id","=",$id)
-                             ->update(["estado_producto_sede"=>"1","estado_inventario"=>"activo"]);
-                            $mo=new MovimientosInventario();
-                            $mo->insertar([
-                                "fk_id_det_inventario"=>$id,
-                                "habia"=>$pro[0]->cantidad_existencias_unidades,
-                                "fk_id_usuario"=>$datos->datos->fk_id_usuario,
-                                "tipo"=>$datos->datos->tipo_entrada,
-                                "descripcion"=>$datos->datos->tipo_entrada_inventario,
-                                "cantidad"=>(int)$datos->datos->cantidad_existencias,
-                                "quedan"=>(int)$pro2[0]->cantidad_existencias_unidades,
-                                 "created_at"=>$datos->hora_cliente,
-                                "updated_at"=>$datos->hora_cliente,   
-                                "observaciones"=>"REGISTRO GENERADO AGREGAR ENTRADA INVENTARIO"
-
-                                ]);
-                    return response()->json($rr);   
-                         
-                    
-                }
-                
-            }else if($datos->datos->tipo_entrada_inventario=="blister"){
-                 $pro=DB::table('detalle_inventarios')
-                        ->join('productos','productos.id','=','detalle_inventarios.fk_id_producto')
-                        ->where("detalle_inventarios.id","=",$id)
-                        ->select("productos.id",
-                                "detalle_inventarios.cantidad_existencias",
-                                "detalle_inventarios.cantidad_existencias_blister",
-                                "detalle_inventarios.cantidad_existencias_unidades",
-                                "productos.tipo_venta_producto",
-                                "productos.unidades_por_caja",
-                                "productos.unidades_por_blister")        
-                        ->get();
-                
-                 DB::table('detalle_inventarios')                
-                    ->where("id","=",$id)
-                    ->increment('cantidad_existencias_unidades',(int)$datos->datos->cantidad_existencias*$pro[0]->unidades_por_blister);
-                    
-                    
-                 $quedan=DB::table("detalle_inventarios")
-                                                 ->join("productos","productos.id","=","detalle_inventarios.fk_id_producto")
-                                                 ->select("detalle_inventarios.id",
-                                                                        'detalle_inventarios.fk_id_producto',
-                                                                        "productos.unidades_por_caja",
-                                                                        "productos.unidades_por_blister",
-                                                                        "detalle_inventarios.cantidad_existencias",
-                                                                        "detalle_inventarios.cantidad_existencias_unidades",
-                                                                        "detalle_inventarios.cantidad_existencias_blister",
-                                                                        "detalle_inventarios.precio_venta_sede",
-                                                                        "detalle_inventarios.precio_venta_blister_sede",
-                                                                        "detalle_inventarios.precio_mayoreo_sede",
-                                                                        "productos.precio_venta",
-                                                                        "productos.precio_venta_blister",
-                                                                        "productos.precio_mayoreo",
-                                                                        "productos.tipo_venta_producto")
-
-                                                        ->where("detalle_inventarios.id","=",$id)
-                                                        ->get();     
-                                                                    
-                 DB::table("detalle_inventarios")
-                    ->where( "id","=",$id)
-                    ->update(["cantidad_existencias_blister"=>floor($quedan[0]->cantidad_existencias_unidades/$quedan[0]->unidades_por_blister),
-                              "cantidad_existencias"=>floor($quedan[0]->cantidad_existencias_unidades/$quedan[0]->unidades_por_blister)/$quedan[0]->unidades_por_caja]);
-
-
-                 
-                 $mo=new MovimientosInventario();
-                 $mo->insertar([
-                    "fk_id_det_inventario"=>$id,
-                    "habia"=>$pro[0]->cantidad_existencias_unidades,
-                    "fk_id_usuario"=>$datos->datos->fk_id_usuario,
-                    "tipo"=>$datos->datos->tipo_entrada,
-                    "descripcion"=>$datos->datos->tipo_entrada_inventario,
-                    "cantidad"=>(int)$datos->datos->cantidad_existencias,
-                    "quedan"=>(int)$quedan[0]->cantidad_existencias_unidades,
-                     "created_at"=>$datos->hora_cliente,
-                    "updated_at"=>$datos->hora_cliente,   
-                    "observaciones"=>"REGISTRO GENERADO AGREGAR ENTRADA INVENTARIO"
-
-                                ]);
-
-                 DB::table('productos')
-                     ->where("id","=",$pro[0]->id)
-                     ->update(["estado_producto"=>"1"]);   
-
-                 DB::table('detalle_inventarios')
-                    ->where("id","=",$id)
-                    ->update(["estado_producto_sede"=>"1","estado_inventario"=>"activo"]);
-                return response()->json($rr);        
-            
-            }*/
-            
+          
         }else{
             return response()->json(["respuesta"=>false,"mensaje"=>"Ha ocurrido un error al actualizar cantidad de inventario"]);
         }

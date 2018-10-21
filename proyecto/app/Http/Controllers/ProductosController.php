@@ -81,6 +81,9 @@ class ProductosController extends Controller
                 "precio_compra"=>$datos->datos->precio_compra,
                 "precio_compra_blister"=>$datos->datos->precio_compra_blister,
                 "precio_compra_unidad"=>$datos->datos->precio_compra_unidad,
+                "precio_compra_impuesto"=>$datos->datos->precio_compra_impuesto,
+                "precio_compra_blister_impuesto"=>$datos->datos->precio_compra_blister_impuesto,
+                "precio_compra_unidad_impuesto"=>$datos->datos->precio_compra_unidad_impuesto,
                 "precio_venta"=>$datos->datos->precio_venta,
                 "precio_venta_blister"=>$datos->datos->precio_venta_blister,
                 "precio_mayoreo"=>$datos->datos->precio_mayoreo,
@@ -96,12 +99,13 @@ class ProductosController extends Controller
                 "updated_at"=>$datos->hora_cliente, 
                 "impuesto"=>$datos->datos->impuestos,
                 "grupo"=>"",
-                "sub_grupo"=>"",
-                "laboratorio"=>"",
+                "sub_grupo"=>"",               
 
             ));
             
             
+        }else{
+          return response()->json(["mensaje"=>"Este producto ya esta registardo","respuesta"=>false]); 
         }
         
 
@@ -270,15 +274,43 @@ class ProductosController extends Controller
 
         $prod=new Producto();
         $datos=json_decode($request->get("datos"));
-
+        
         //valido si sede fue seleccionada
-        if($datos->datos->fk_id_sede==false){
+        if($datos->datos->fk_id_sede=="0"){
             
             //ACTUALIZAR UIDAES POR CAJA
-            
+            switch ($datos->datos->tipo_venta_producto) {
+                case 'PorUnidad':
+                    # code...
+                    $datos->datos->unidades_por_blister=1;
+                    
+                    $datos->datos->precio_compra_blister_impuesto=$datos->datos->precio_compra_impuesto;
+                    $datos->datos->precio_compra_unidad_impuesto=$datos->datos->precio_compra_impuesto;
+
+                    $datos->datos->precio_venta_blister=$datos->datos->precio_mayoreo;
+                    
+
+                    $datos->datos->porcentaje_ganancia_blister=$datos->datos->porcentaje_ganancia;
+                    $datos->datos->porcentaje_ganancia_unidad=$datos->datos->porcentaje_ganancia;                    
+                    
+                    
+
+                    break;
+                case 'Caja':
+                  $datos->datos->precio_venta_blister=$datos->datos->precio_mayoreo;
+                
+                    # code...
+                    break;
+                 case 'CajaBlister':
+                        # code...
+                        break;   
+                
+            }
+            //var_dump($datos->datos->unidades_por_caja);
+            //var_dump($id);
             $rr=$prod->editar(array(
-                "codigo_producto"=>$datos->datos->codigo_producto,
-                "codigo_distribuidor"=>$datos->datos->codigo_distribuidor,
+                /*"codigo_producto"=>$datos->datos->codigo_producto,
+                "codigo_distribuidor"=>$datos->datos->codigo_distribuidor,*/
                 "nombre_producto"=>$datos->datos->nombre_producto,
                 "nombre_producto_venta"=>$datos->datos->nombre_producto,
                 "descripcion_producto"=>$datos->datos->descripcion_producto,
@@ -286,6 +318,11 @@ class ProductosController extends Controller
                 "unidades_por_caja"=>$datos->datos->unidades_por_caja,
                 "unidades_por_blister"=>$datos->datos->unidades_por_blister,
                 "precio_compra"=>$datos->datos->precio_compra,
+                "precio_compra_blister"=>$datos->datos->precio_compra_blister,
+                "precio_compra_unidad"=>$datos->datos->precio_compra_unidad,
+                "precio_compra_impuesto"=>$datos->datos->precio_compra_impuesto,
+                "precio_compra_blister_impuesto"=>$datos->datos->precio_compra_blister_impuesto,
+                "precio_compra_unidad_impuesto"=>$datos->datos->precio_compra_unidad_impuesto,
                 "precio_venta"=>$datos->datos->precio_venta,
                 "precio_venta_blister"=>$datos->datos->precio_venta_blister,
                 "precio_mayoreo"=>$datos->datos->precio_mayoreo,
@@ -296,8 +333,9 @@ class ProductosController extends Controller
                 "fk_id_departamento"=>$datos->datos->fk_id_departamento,
                 "fk_id_proveedor"=>$datos->datos->fk_id_proveedor,
                 "updated_at"=>$datos->hora_cliente, 
-                 "impuesto"=>$datos->datos->impuestos,   
-                 "inventario"=>$datos->datos->inventario,
+                "impuesto"=>$datos->datos->impuestos,   
+                "inventario"=>$datos->datos->inventario,
+                "laboratorio"=>$datos->datos->laboratorio,
 
             ),array(["id","=",$id]));
 
@@ -344,8 +382,37 @@ class ProductosController extends Controller
                      ->get();   
             
             if(count($resp)>0){
+                    switch ($datos->datos->tipo_venta_producto) {
+                            case 'PorUnidad':
+                                # code...
+                                $datos->datos->unidades_por_blister=1;
+                              
+
+                                $datos->datos->precio_venta_blister=$datos->datos->precio_mayoreo;
+                                
+
+                                $datos->datos->porcentaje_ganancia_blister=$datos->datos->porcentaje_ganancia;
+                                $datos->datos->porcentaje_ganancia_unidad=$datos->datos->porcentaje_ganancia;                    
+                                
+                                
+
+                                break;
+                            case 'Caja':
+                            $datos->datos->precio_venta_blister=$datos->datos->precio_mayoreo;
+                                # code...
+                                break;
+                             case 'CajaBlister':
+                                    # code...
+                                    break;   
+                            
+                        }
+
+
                 if($resp[0]->fk_id_sede==$datos->datos->fk_id_sede){
                     //falkta actualizar las cantidades
+
+
+
                     DB::table("detalle_inventarios")
                             ->where([ ["fk_id_producto","=",$id],
                                      ["fk_id_sede","=",$datos->datos->fk_id_sede]])
@@ -353,8 +420,8 @@ class ProductosController extends Controller
                                        "precio_venta_blister_sede"=>$datos->datos->precio_venta_blister, 
                                       "precio_mayoreo_sede"=>$datos->datos->precio_mayoreo,
                                        "porcentaje_ganancia_sede"=>$datos->datos->porcentaje_ganancia,
-                                       "porcentaje_ganancia_blister_sede"=>$datos->datos->porcentaje_ganancia,
-                                       "porcentaje_ganancia_sede_unidad"=>$datos->datos->porcentaje_ganancia,
+                                       "porcentaje_ganancia_blister_sede"=>$datos->datos->porcentaje_ganancia_blister,
+                                       "porcentaje_ganancia_sede_unidad"=>$datos->datos->porcentaje_ganancia_unidad,
                                        "minimo_inventario_sede"=>$datos->datos->minimo_inventario,
                                        "cantidad_existencias_unidades"=>$resp[0]->cantidad_existencias_unidades,
                                        "cantidad_existencias_blister"=>floor($resp[0]->cantidad_existencias_unidades/$datos->datos->unidades_por_blister),
@@ -376,8 +443,8 @@ class ProductosController extends Controller
                                      "precio_venta_blister_sede"=>$datos->datos->precio_venta_blister, 
                                       "precio_mayoreo_sede"=>$datos->datos->precio_mayoreo,
                                        "porcentaje_ganancia_sede"=>$datos->datos->porcentaje_ganancia,
-                                       "porcentaje_ganancia_blister_sede"=>$datos->datos->porcentaje_ganancia,
-                                       "porcentaje_ganancia_sede_unidad"=>$datos->datos->porcentaje_ganancia,
+                                       "porcentaje_ganancia_blister_sede"=>$datos->datos->porcentaje_ganancia_blister,
+                                       "porcentaje_ganancia_sede_unidad"=>$datos->datos->porcentaje_ganancia_unidad,
                                         "minimo_inventario_sede"=>$datos->datos->minimo_inventario,
                                         "created_at"=>$datos->hora_cliente,
                                         "updated_at"=>$datos->hora_cliente]);
@@ -482,33 +549,49 @@ class ProductosController extends Controller
                                $pp_dt=DB::table("detalle_inventarios")
                                        ->where("fk_id_producto","=",$id_producto)
                                        ->get();
+
+                             $precio_blister=($valor/$pp[0]->unidades_por_caja);
+                             $precio_unidad=($precio_blister/$pp[0]->unidades_por_blister);
+
+                             $impuesto_caja=$valor*($pp[0]->impuesto/100);
+                             $impuesto_blister=($precio_blister)*($pp[0]->impuesto/100);
+                             $impuesto_unidad=($precio_unidad)*($pp[0]->impuesto/100);         
                              //actualizo productos
-                             $dif=$pp[0]->precio_venta-(double)$valor;
-                             $diff_blister=$pp[0]->precio_venta_blister-(double)$valor;
-                             $diff_unidad=$pp[0]->precio_mayoreo-(double)$valor;
+                             $new_precio_compra_blister=($precio_blister)+$impuesto_blister;
+                             $new_precio_compra_unidad=($precio_unidad)+$impuesto_unidad;
+
+                             $dif=($pp[0]->precio_venta/((double)$valor+$impuesto_caja))-1;
+                             $diff_blister=($pp[0]->precio_venta_blister/(double)$new_precio_compra_blister)-1;
+                             $diff_unidad=($pp[0]->precio_mayoreo/(double)$new_precio_compra_unidad)-1;
                              
-                             $porcentaje=(double)round((($dif)*100)/$pp[0]->precio_venta,2);
-                             $porcentaje_bli=(double)round((($diff_blister)*100)/$pp[0]->precio_venta_blister,2);
-                             $porcentaje_uni=(double)round((($diff_unidad)*100)/$pp[0]->precio_mayoreo,2);
+                             $porcentaje=(double)round((($dif)*100),2);
+                             $porcentaje_bli=(double)round((($diff_blister)*100),2);
+                             $porcentaje_uni=(double)round((($diff_unidad)*100),2);
                              
                                
                                DB::table("productos")
                                        ->where("id","=",$id_producto)
-                                       ->update(["precio_compra_blister"=>$valor/$pp[0]->unidades_por_caja,
-                                           "precio_compra_unidad"=>($valor/$pp[0]->unidades_por_caja)/$pp[0]->unidades_por_blister,
-                                           "porcentaje_ganancia"=>$porcentaje,
-                                           "porcentaje_ganancia_blister"=>$porcentaje_bli,
-                                           "porcentaje_ganancia_unidad"=>$porcentaje_uni]);
+                                       ->update([
+                                          "precio_compra"=>$valor,
+                                          "precio_compra_blister"=>$precio_blister,
+                                          "precio_compra_unidad"=>$precio_unidad,
+                                          "precio_compra"=>$new_precio_compra,
+                                          "precio_compra_blister"=>$new_precio_compra_blister,
+                                          "precio_compra_unidad"=>$new_precio_compra_unidad, 
+                                          "porcentaje_ganancia"=>$porcentaje,
+                                          "porcentaje_ganancia_blister"=>$porcentaje_bli,
+                                          "porcentaje_ganancia_unidad"=>$porcentaje_uni
+                                         ]);
                              
                              //actualiza detall inventario
                                
-                             $dif_dt=$pp_dt[0]->precio_venta_sede-(double)$valor;
-                             $diff_blister_dt=$pp_dt[0]->precio_venta_blister_sede-(double)$valor;
-                             $diff_unidad_dt=$pp_dt[0]->precio_mayoreo_sede-(double)$valor;
+                             $dif_dt=($pp_dt[0]->precio_venta_sede/(double)$valor)-1;
+                             $diff_blister_dt=($pp_dt[0]->precio_venta_blister_sede/(double)$new_precio_compra_blister)-1;
+                             $diff_unidad_dt=($pp_dt[0]->precio_mayoreo_sede/(double)$new_precio_compra_unidad)-1;
                              
-                             $porcentaje_dt=(double)round((($dif_dt)*100)/$pp_dt[0]->precio_venta_sede,2);
-                             $porcentaje_bli_dt=(double)round((($diff_blister_dt)*100)/$pp_dt[0]->precio_venta_blister_sede,2);
-                             $porcentaje_uni_dt=(double)round((($diff_unidad_dt)*100)/$pp_dt[0]->precio_mayoreo_sede,2);
+                             $porcentaje_dt=(double)round((($dif_dt)*100),2);
+                             $porcentaje_bli_dt=(double)round((($diff_blister_dt)*100),2);
+                             $porcentaje_uni_dt=(double)round((($diff_unidad_dt)*100),2);
                           
                             
                                  DB::table("detalle_inventarios")
@@ -525,13 +608,13 @@ class ProductosController extends Controller
                              //calcular el nuevo porcentaje
                              $pre_com=DB::table("productos")
                                      ->where("id","=",$datos->datos->id_producto)
-                                     ->select("productos.precio_compra")
+                                     ->select("productos.precio_compra_impuesto")
                                      ->get();
                             
                              
-                             $dif=$valor-(double)$pre_com[0]->precio_compra;
+                             $dif=($valor/(double)$pre_com[0]->precio_compra_impuesto)-1;
                              
-                             $porcentaje=(double)round((($dif)*100)/$valor,2);
+                             $porcentaje=(double)round((($dif)*100),2);
                           
                              Producto::where("id",$datos->datos->id_producto)
                                      ->update(["porcentaje_ganancia"=>$porcentaje]);
@@ -545,13 +628,13 @@ class ProductosController extends Controller
                              $valor=(double)$datos->datos->valor;
                              $pre_com=DB::table("productos")
                                      ->where("id","=",$datos->datos->id_producto)
-                                     ->select("productos.precio_compra_blister")
+                                     ->select("productos.precio_compra_blister_impuesto")
                                      ->get();
                             
                              
-                             $dif=$valor-(double)$pre_com[0]->precio_compra_blister;
+                             $dif=($valor/(double)$pre_com[0]->precio_compra_blister_impuesto)-1;
                              
-                             $porcentaje=(double)round((($dif)*100)/$valor,2);
+                             $porcentaje=(double)round((($dif)*100),2);
                             
                              
                              
@@ -566,13 +649,13 @@ class ProductosController extends Controller
                              $valor=(double)$datos->datos->valor;
                              $pre_com=DB::table("productos")
                                      ->where("id","=",$datos->datos->id_producto)
-                                     ->select("productos.precio_compra_unidad")
+                                     ->select("productos.precio_compra_unidad_impuesto")
                                      ->get();
                             
                              
-                             $dif=$valor-(double)$pre_com[0]->precio_compra_unidad;
+                             $dif=($valor/(double)$pre_com[0]->precio_compra_unidad_impuesto)-1;
                              
-                             $porcentaje=(double)round((($dif)*100)/$valor,2);
+                             $porcentaje=(double)round((($dif)*100),2);
                             
                              
                              
@@ -633,20 +716,7 @@ class ProductosController extends Controller
                                     
                                     
 
-                                //echo $value->nombre_sede."\n";
-                                //var_dump("id = ".$value->id);
-                                //echo "\n";
-                                //echo "cantidad_existencias\n";
-                                //var_dump(floor(((int)$d[0]->cantidad_existencias_unidades/(int)$d[0]->unidades_por_blister)/(int)$valor));
-                                //echo "cantidad_existencias_blister\n";
-                                //var_dump(floor(((int)$d[0]->cantidad_existencias_unidades/(int)$d[0]->unidades_por_blister)));
-                                
-                                
-                                //var_dump($d[0]->cantidad_existencias);
-                                //var_dump($d[0]->id);
-                                //echo "\n";
-                                //var_dump($d[0]->cantidad_existencias_blister);
-                                //var_dump($d);
+                               
                                 
                             }
                             
@@ -685,25 +755,14 @@ class ProductosController extends Controller
                                     }else{
                                         return response()->json(["respuesta"=>false,"mensaje"=>"Unidades de caja estan en cero"]);
                                     }    
-                                    //echo $value->nombre_sede."\n";
-                                    //var_dump("id = ".$value->id);
-                                    //echo "\n";
-                                    //var_dump($d);
-                                    //echo "cantidad_existencias\n";
-                                    //var_dump(floor(((int)$d[0]->cantidad_existencias_unidades/(int)$valor)/(int)$d[0]->unidades_por_caja));
-                                    //echo "cantidad_existencias_blister\n";
-                                    //var_dump(floor(((int)$d[0]->cantidad_existencias_unidades/(int)$valor)));
+                                    
                                     
                                     DB::table("detalle_inventarios")
                                         ->where("id","=",$d[0]->id)
                                         ->update([  
                                                     "cantidad_existencias"=>floor(((int)$d[0]->cantidad_existencias_unidades/(int)$valor)/(int)$d[0]->unidades_por_caja),
                                                     "cantidad_existencias_blister"=>floor(((int)$d[0]->cantidad_existencias_unidades/(int)$valor))]);
-                                    //var_dump($d[0]->cantidad_existencias);
-                                    //var_dump($d[0]->id);
-                                    //echo "\n";
-                                    //var_dump($d[0]->cantidad_existencias_blister);
-                                    //var_dump($d);
+                                 
                                 }
                                 
                             }
@@ -746,13 +805,13 @@ class ProductosController extends Controller
                              
                              $pre_com=DB::table("productos")
                                      ->where("id","=",$datos->datos->id_producto)
-                                     ->select("productos.precio_compra")
+                                     ->select("productos.precio_compra_impuesto")
                                      ->get();
                             
                              
-                             $dif=$valor-(double)$pre_com[0]->precio_compra;
+                             $dif=($valor/(double)$pre_com[0]->precio_compra_impuesto)-1;
                              
-                             $porcentaje=(double)round((($dif)*100)/$valor,2);
+                             $porcentaje=(double)round((($dif)*100),2);
                           
                              
                             
@@ -769,13 +828,13 @@ class ProductosController extends Controller
                              $valor=(double)$datos->datos->valor;
                               $pre_com=DB::table("productos")
                                      ->where("id","=",$datos->datos->id_producto)
-                                     ->select("productos.precio_compra_blister")
+                                     ->select("productos.precio_compra_blister_impuesto")
                                      ->get();
                             
                              
-                             $dif=$valor-(double)$pre_com[0]->precio_compra_blister;
+                             $dif=($valor/(double)$pre_com[0]->precio_compra_blister_impuesto)-1;
                              
-                             $porcentaje=(double)round((($dif)*100)/$valor,2);
+                             $porcentaje=(double)round((($dif)*100),2);
                           
                              
                             
@@ -798,13 +857,13 @@ class ProductosController extends Controller
                              
                               $pre_com=DB::table("productos")
                                      ->where("id","=",$datos->datos->id_producto)
-                                     ->select("productos.precio_compra_unidad")
+                                     ->select("productos.precio_compra_unidad_impuesto")
                                      ->get();
                             
                              
-                             $dif=$valor-(double)$pre_com[0]->precio_compra_unidad;
+                             $dif=($valor/(double)$pre_com[0]->precio_compra_unidad_impuesto)-1;
                              
-                             $porcentaje=(double)round((($dif)*100)/$valor,2);
+                             $porcentaje=(double)round((($dif)*100),2);
                           
                              //echo "%";
                              //var_dump($porcentaje);
@@ -1008,7 +1067,7 @@ class ProductosController extends Controller
         
     }
     public function crear_productos_inventario(Request $request){
-        
+        var_dump("wtf?");
         $prod=new Producto();
         $dt=new DetalleInventario();
         $mi=new MovimientosInventario();
@@ -1058,7 +1117,10 @@ class ProductosController extends Controller
                 "tipo_venta_producto"=>$datos->datos->tipo_venta_producto,
                 "precio_compra"=>$datos->datos->precio_compra,
                 "precio_compra_blister"=>$datos->datos->precio_compra_blister,
-                "precio_compra_unidad"=>$datos->datos->precio_compra_unidad,
+                "precio_compra_unidad"=>$datos->datos->precio_compra_unidad,                
+                /*"precio_compra_impuesto"=>$datos->datos->precio_compra_impuesto,
+                "precio_compra_blister_impuesto"=>$datos->datos->precio_compra_blister_impuesto,
+                "precio_compra_unidad_impuesto"=>$datos->datos->precio_compra_unidad_impuesto,*/
                 "precio_venta"=>$datos->datos->precio_venta,
                 "precio_venta_blister"=>$datos->datos->precio_venta_blister,
                 "precio_mayoreo"=>$datos->datos->precio_mayoreo,

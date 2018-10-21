@@ -148,7 +148,7 @@ class Producto extends Model
                     ->orwhere(
                             [  
                                 ["fk_id_sede","=",$sede],
-                                ["nombre_producto_venta",'LIKE','%'.trim($pro).'%']
+                                ["nombre_producto_venta",'LIKE',trim($pro).'%']
                             ]
                         )
                      ->orwhere(
@@ -163,7 +163,45 @@ class Producto extends Model
                                 ["codigo_distribuidor",'LIKE',trim($pro)]
                             ]
                         )
-                     
+                    ->select("productos.nombre_producto",
+                               "productos.descripcion_producto", 
+                              "productos.nombre_producto_venta",
+                               "productos.codigo_producto",
+                               "productos.codigo_distribuidor",
+                               "productos.tipo_venta_producto",
+                               "productos.unidades_por_caja",
+                               "productos.unidades_por_blister",
+                               "productos.laboratorio",
+                               "productos.impuesto",
+                               "productos.precio_compra",
+                               "productos.precio_compra_blister",
+                               "productos.precio_compra_unidad",
+                               "productos.precio_compra_impuesto",
+                               "productos.precio_compra_blister_impuesto",
+                               "productos.precio_venta",
+                               "productos.precio_venta_blister",
+                               "productos.precio_mayoreo",
+                               "productos.porcentaje_ganancia",
+                               "productos.porcentaje_ganancia_blister",
+                               "productos.porcentaje_ganancia_unidad",                             
+                               "productos.precio_compra_unidad_impuesto",
+                               "productos.inventario",
+                               "productos.minimo_inventario",
+                               "productos.fk_id_proveedor",
+                               "productos.fk_id_departamento",
+                               "detalle_inventarios.porcentaje_ganancia_sede",
+                               "detalle_inventarios.porcentaje_ganancia_blister_sede",
+                               "detalle_inventarios.porcentaje_ganancia_sede_unidad",
+                               "detalle_inventarios.precio_venta_sede",
+                               "detalle_inventarios.precio_venta_blister_sede",
+                               "detalle_inventarios.precio_mayoreo_sede",
+                               "detalle_inventarios.id",
+                               "detalle_inventarios.fk_id_producto",
+                               "detalle_inventarios.fk_id_sede",
+                               "detalle_inventarios.cantidad_existencias",
+                               "detalle_inventarios.cantidad_existencias_blister",
+                               "detalle_inventarios.cantidad_existencias_unidades",
+                               "detalle_inventarios.minimo_inventario_sede" )
                     ->limit(30)   
                     ->get();
                  
@@ -190,34 +228,33 @@ class Producto extends Model
                             "datos"=>$datos);
                  }
             }
-            else{
+            else {
                 $datos=DB::table('productos')
-                    ->join('detalle_inventarios','productos.id','=','detalle_inventarios.fk_id_producto')
+                    /*->join('detalle_inventarios','productos.id','=','detalle_inventarios.fk_id_producto')*/
                     ->where(
                         "nombre_producto_venta",'LIKE','%'.trim($pro).'%'
                         )
                     ->orwhere("codigo_producto",'=',trim($pro))
-                    ->orwhere("codigo_distribuidor",'=',trim($pro))
-                     
+                    ->orwhere("codigo_distribuidor",'=',trim($pro))                     
                     ->limit(30)   
                     ->get();
-               
+                 // var_dump($datos);
                  if(count($datos)>0){
                     $array=[];
                     foreach ($datos as $key => $value) {
-                        if($value->fk_id_sede==$sede){
+                        
                             $array[$key]=$value;    
-                        }
+                        
                         
                     }
-                  if(count($array)==0){
-                        return array("mensaje"=>"Este producto no tiene existencias asociadasa esta sede",
-                            "respuesta"=>false,
-                            "datos"=>$array);   
-                  }
+                    if(count($array)==0){
+                          return array("mensaje"=>"Este producto existe",
+                              "respuesta"=>false,
+                              "datos"=>$array);   
+                    }
                     return array("mensaje"=>"Elementos consultados",
-                            "respuesta"=>true,
-                            "datos"=>$array);   
+                              "respuesta"=>true,
+                              "datos"=>$array);   
                  }else{
                     return array("mensaje"=>"Elementos NO encontrados",
                             "respuesta"=>false,

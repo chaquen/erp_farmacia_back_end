@@ -172,19 +172,22 @@ class Reportes {
                 
                     $arr_where=array();
                     $arr_where_2=array();
+                    $arr_where_3=array();
                     $i=0;
                   //  var_dump($datos->datos->fk_id_categoria);
                     //$arr_where[$i]=["detalle_inventarios.estado_producto_sede",'=',"1"];
                     $i++;
                     if((int)$datos->datos->fk_id_categoria!==0){
                         $arr_where[$i]=["productos.fk_id_departamento",'=',$datos->datos->fk_id_categoria];
-                         $arr_where_2[$i]=["productos.fk_id_departamento",'=',$datos->datos->fk_id_categoria];
+                        $arr_where_2[$i]=["productos.fk_id_departamento",'=',$datos->datos->fk_id_categoria];
+                        $arr_where_3[$i]=["productos.fk_id_departamento",'=',$datos->datos->fk_id_categoria];
                                 $i++;
                     }
                     
                     if($datos->datos->nombre_producto!=""){
                          $arr_where[$i]=["productos.codigo_producto","LIKE",trim($datos->datos->nombre_producto)];
-                         $arr_where_2[$i]=["productos.codigo_distribuidor","LIKE",trim($datos->datos->nombre_producto)];       
+                         $arr_where_2[$i]=["productos.codigo_distribuidor","LIKE",trim($datos->datos->nombre_producto)];  
+                         $arr_where_3[$i]=["productos.nombre_producto","LIKE","%".trim($datos->datos->nombre_producto)."%"];       
                          $i++;
                          
                     }
@@ -192,14 +195,23 @@ class Reportes {
                      if($datos->datos->sede!=0){
                           $arr_where[$i]=["sedes.id",'=',$datos->datos->sede];
                           $arr_where_2[$i]=["sedes.id",'=',$datos->datos->sede];
-                                $i++;
+                          $arr_where_3[$i]=["sedes.id",'=',$datos->datos->sede];
+                        $i++;
                      }
                      //var_dump($datos->datos->fk_id_proveedor);
-                       if((int)$datos->datos->fk_id_proveedor!==0){
+                     if((int)$datos->datos->fk_id_proveedor!==0){
                           $arr_where[$i]=["proveedors.id",'=',$datos->datos->fk_id_proveedor];
                           $arr_where_2[$i]=["proveedors.id",'=',$datos->datos->fk_id_proveedor];
-                               
+                          $arr_where_3[$i]=["proveedors.id",'=',$datos->datos->fk_id_proveedor];
+                          $i++;          
                      }
+                     if($datos->datos->estado_inventario!==""){
+                          $arr_where[$i]=["detalle_inventarios.estado_inventario",'LIKE',$datos->datos->estado_inventario];
+                          $arr_where_2[$i]=["detalle_inventarios.estado_inventario",'LIKE',$datos->datos->estado_inventario];
+                          $arr_where_3[$i]=["detalle_inventarios.estado_inventario",'LIKE',$datos->datos->estado_inventario];
+                          $i++;          
+                     }
+
                      //echo count($arr_where);
                      //var_dump($arr_where);
                     
@@ -211,6 +223,7 @@ class Reportes {
                             ->join('proveedors',"proveedors.id","=",'productos.fk_id_proveedor')         
                             ->where($arr_where)
                             ->orwhere($arr_where_2)
+                            ->orwhere($arr_where_3)
                             ->orderby('total_existencias_unidades',"DESC")            
                             ->select('productos.id',
                                     'proveedors.nombre_proveedor',
